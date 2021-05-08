@@ -1,0 +1,65 @@
+Hosts = 32, Switches 26, Radix = 4
+Diameter     = 11
+Diameter Gap = 6 (11 - 5)
+ASPL         = 5.9677419355 (2960/496)
+ASPL Gap     = 1.7741935484 (5.9677419355 - 4.1935483871)
+Hosts = 80, Switches 40, Radix = 6
+Diameter     = 7
+Diameter Gap = 3 (7 - 4)
+ASPL         = 4.7037974684 (14864/3160)
+ASPL Gap     = 0.8430379747 (4.7037974684 - 3.8607594937)
+Hosts = 128, Switches 16, Radix = 24
+Diameter     = 4
+Diameter Gap = 1 (4 - 3)
+ASPL         = 3.4881889764 (28352/8128)
+ASPL Gap     = 0.6299212598 (3.4881889764 - 2.8582677165)
+Hosts = 432, Switches 120, Radix = 12
+Diameter     = 6
+Diameter Gap = 2 (6 - 4)
+ASPL         = 4.4747894646 (416585/93096)
+ASPL Gap     = 0.6836061700 (4.4747894646 - 3.7911832947)
+Hosts = 1024, Switches 400, Radix = 10
+Diameter     = 7
+Diameter Gap = 2 (7 - 5)
+ASPL         = 5.2628795516 (2756570/523776)
+ASPL Gap     = 0.9393213893 (5.2628795516 - 4.3235581623)
+Hosts = 1024, Switches 1024, Radix = 5
+Diameter     = 11
+Diameter Gap = 5 (11 - 6)
+ASPL         = 7.6539684903 (4008965/523776)
+ASPL Gap     = 1.6539684903 (7.6539684903 - 6.0000000000)
+Hosts = 1281, Switches 139, Radix = 21
+Diameter     = 6
+Diameter Gap = 2 (6 - 4)
+ASPL         = 4.2602702966 (3492740/819840)
+ASPL Gap     = 0.5360515466 (4.2602702966 - 3.7242187500)
+Hosts = 3800, Switches 300, Radix = 30
+Diameter     = 5
+Diameter Gap = 1 (5 - 4)
+ASPL         = 4.2981964783 (31024812/7218100)
+ASPL Gap     = 0.4916684446 (4.2981964783 - 3.8065280337)
+Hosts = 4608, Switches 250, Radix = 36
+Diameter     = 5
+Diameter Gap = 1 (5 - 4)
+ASPL         = 4.2170757852 (44762269/10614528)
+ASPL Gap     = 0.4612694036 (4.2170757852 - 3.7558063816)
+Hosts = 8208, Switches 330, Radix = 48
+Diameter     = 5
+Diameter Gap = 1 (5 - 4)
+ASPL         = 4.1200048881 (138768060/33681528)
+ASPL Gap     = 0.3732033772 (4.1200048881 - 3.7468015109)
+Hosts = 10000, Switches 200, Radix = 100
+Diameter     = 4
+Diameter Gap = 0 (4 - 4)
+ASPL         = 3.7684768477 (188405000/49995000)
+ASPL Gap     = 0.7483748375 (3.7684768477 - 3.0201020102)
+Hosts = 10000, Switches 5000, Radix = 10
+Diameter     = 8
+Diameter Gap = 2 (8 - 6)
+ASPL         = 6.4363279528 (321784216/49995000)
+ASPL Gap     = 1.0494892689 (6.4363279528 - 5.3868386839)
+Hosts = 65536, Switches 3000, Radix = 64
+Diameter     = 5
+Diameter Gap = 1 (5 - 4)
+ASPL         = 4.5388275158 (9746909143/2147450880)
+ASPL Gap     = 0.5842383650 (4.5388275158 - 3.9545891508)
