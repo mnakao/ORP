@@ -4,7 +4,7 @@ You can use following.
 * liborp.a : Serial version
 * liborp_threads.a : Threads version
 
-## Algotherm for hASPL (hosts Average Shortest Path Length)
+## Algotherm for hASPL (host-to-host Average Shortest Path Length)
 It uses an algorithm that is an extension of the following paper (Open Access). _When you write a paper using this library, please refer to the paper._
 * https://dl.acm.org/doi/10.1145/3368474.3368478
 
