@@ -55,16 +55,6 @@ static bool IS_SWITCH(const int v, const int hosts)
   return (v >= hosts);
 }
 
-void ORP_Srand(const unsigned int seed)
-{
-  srand(seed);
-}
-
-static int get_random(const int max)
-{
-  return (int)(rand()*((double)max)/(1.0+RAND_MAX));
-}
-
 void ORP_Set_degrees(const int hosts, const int switches, const int lines, const int (*edge)[2],
                      int h_degree[switches], int s_degree[switches])
 {
@@ -83,6 +73,51 @@ void ORP_Set_degrees(const int hosts, const int switches, const int lines, const
       s_degree[edge[i][1]-hosts]++;
     }
   }
+}
+
+bool ORP_Verify_edge(const int hosts, const int switches, const int radix, const int lines, const int (*edge)[2])
+{
+  int local_hosts[hosts];
+  for(int i=0;i<hosts;i++)
+    local_hosts[i] = 0;
+  
+  for(int i=0;i<lines;i++){
+    if(IS_HOST(edge[i][0], hosts))
+      local_hosts[edge[i][0]]++;
+    else if(IS_HOST(edge[i][1], hosts))
+      local_hosts[edge[i][1]]++;
+    else if(IS_HOST(edge[i][0], hosts) && IS_HOST(edge[i][1], hosts)){
+      fprintf(stderr, "Both vertices are hosts\n");
+      return false;
+    }
+  }
+  for(int i=0;i<hosts;i++){
+    if(local_hosts[i] != 1){
+       fprintf(stderr, "hosts is wrong.\n");
+       return false;
+    }
+  }
+  
+  int h_degree[switches], s_degree[switches];
+  ORP_Set_degrees(hosts, switches, lines, edge, h_degree, s_degree);
+  for(int i=0;i<switches;i++){
+    if(radix < h_degree[i] + s_degree[i]){
+      fprintf(stderr, "radix is too large.\n");
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void ORP_Srand(const unsigned int seed)
+{
+  srand(seed);
+}
+
+static int get_random(const int max)
+{
+  return (int)(rand()*((double)max)/(1.0+RAND_MAX));
 }
 
 void ORP_Set_host_degree(const int hosts, const int switches, const int lines, const int (*edge)[2],

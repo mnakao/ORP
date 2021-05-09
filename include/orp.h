@@ -24,3 +24,4 @@ void ORP_Swap_adjacency(int switches, int radix, int *s_degree, ORP_Restore *r, 
 void ORP_Swing_adjacency(int switches, int radix, int *h_degree, int *s_degree, ORP_Restore *r, void *adjacency);
 void ORP_Write_edge(int hosts, int switches, int radix, int lines, void *edge, char *fname);
 void* ORP_Generate_random(int hosts, int switches, int radix, bool assigned_evenly, int *lines, int *h_degree, int *s_degree);
+bool ORP_Verify_edge(int hosts, int switches, int radix, int lines, void *edge);

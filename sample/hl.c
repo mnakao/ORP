@@ -196,7 +196,8 @@ int main(int argc, char *argv[])
   printf("ASPL Gap        = %.10f (%.10f - %.10f)\n", best_ASPL - low_ASPL, best_ASPL, low_ASPL);
   printf("Time            = %f sec.\n", hl_time);
   printf("Assign evenly?  = %s\n", (assign_evenly)? "Yes" : "No");
-
+  printf("Verify?         = %s\n", (ORP_Verify_edge(hosts, switches, radix, lines, edge))? "Yes" : "No");
+  
   if(outfname)
     ORP_Write_edge(hosts, switches, radix, lines, edge, outfname);
 

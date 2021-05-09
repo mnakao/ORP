@@ -280,6 +280,18 @@ void ORP_Print_degree(int hosts, int switches, int degree[switches])
 * [IN] switches : Number of switches.
 * [IN] degree : Degree of host or switch (h_degree or s_degree).
 
+### Verify an edge
+Verify if an edge properties (hosts, switch, radix) are correct.
+```
+bool ORP_Verify_edge(int hosts, int switches, int radix, int lines, void *edge);
+```
+* [IN] hosts : Number of hosts.
+* [IN] switches : Number of switches.
+* [IN] radix : Radix of the switch.
+* [IN] lines : Number of lines in an edge list.
+* [IN] edge : Edge list.
+* [RETURN] Whether the edge properties are correct.
+
 ### Convert an edge list to an adjacency matrix
 ```
 void ORP_Conv_edge2adjacency(int hosts, int switches, int radix, int lines, int edge[lines][2], int adjacency[switches][radix])
@@ -348,7 +360,7 @@ void* ORP_Generate_random(int hosts, int switches, int radix, bool assign_evenly
 * [OUT] lines : Number of lines in an edge list.
 * [OUT] h_degree : Number of hosts connected to each switch.
 * [OUT] s_degree : Number of switches connected to each switch.
-* [RETURN] edge : Edge list.
+* [RETURN] Edge list.
 
 ### Mutate an adjacency matrix
 Mutate an adjacency matrix slightly.
