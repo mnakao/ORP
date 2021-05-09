@@ -112,10 +112,10 @@ Following figure and its edge file are examples of a graph (h = 15, s = 4, r = 6
 ### ORP_ASPL=BFS
 
 This library provides two algorithms for ASPL.
-The default setting calculates the APSL using a matrix product method.
+The default setting calculates the APSL with the matrix method.
 Apart from that, it also provides a method using breadth-first search (BFS).
-In most cases, the matrix product method is faster, but the BFS method consumes less memory.
-In default setting, the matrix product method is used.
+While the matrix method is faster, the BFS method consumes less memory.
+In default setting, the matrix method is used.
 In case of ORP_ASPL=BFS, BFS is used.
 
 ### ORP_PROFILE=1
@@ -402,8 +402,8 @@ void ORP_Restore_adjacency(ORP_Restore r, int radix, int h_degree[switches], int
 * Graph with (hosts, switches, radix) = (65536, 3000, 64)
 * http://research.nii.ac.jp/graphgolf/solutions/h65536r64k5l453.20210426-ftr2ae.edges.gz
   * libapsp.a with BFS : 602.2 msec.
-  * libapsp.a with matrix product method : 52.6 msec.
-  * libapsp_threads.a with matrix product method : 9.9 msec. (12 threads, 1 CPU), 5.4 msec. (24 threads, 2 CPUs)
+  * libapsp.a with matrix method : 52.6 msec.
+  * libapsp_threads.a with matrix method : 9.9 msec. (12 threads, 1 CPU), 5.4 msec. (24 threads, 2 CPUs)
 
 ## Reference
 [1] Ryota Yasudo et al. ``Designing High-Performance Interconnection Networks with Host-Switch Graphs``, in IEEE Transactions on Parallel and Distributed Systems, vol. 30, no. 2, pp. 315-330, 1 Feb. 2019, doi: 10.1109/TPDS.2018.2864286.

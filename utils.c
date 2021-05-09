@@ -325,6 +325,8 @@ int ORP_Get_kind()
   if(val)
     if(strcmp(val, "BFS") == 0)
       kind = ASPL_BFS;
+    else
+      ERROR("Unknown ORP_ASPL value (%s)\n", val);
 
   return kind;
 }
@@ -339,6 +341,10 @@ bool ORP_Check_profile()
     if(val)
       if(atoi(val) == 1)
         enable_profile = true;
+      else if(atoi(val) == 0)
+        enable_profile = false;
+      else
+        ERROR("Unknown ORP_PROFILE value (%d)\n", atoi(val));
   }
   
   return enable_profile;
