@@ -238,7 +238,7 @@ That is, lines is the number of lines in the file excluding the first line, and 
 
 ### Write an edge to a file
 ```
-void ORP_Write_edge(int hosts, int switches, int radix, int lines, void *edge, char *fname)
+void ORP_Write_edge(int hosts, int switches, int radix, int lines, int edge[lines][2], char *fname)
 ```
 * [IN] hosts : Number of hosts.
 * [IN] switches : Number of switches.
@@ -283,7 +283,7 @@ void ORP_Print_degree(int hosts, int switches, int degree[switches])
 ### Verify an edge
 Verify if an edge properties (hosts, switch, radix) are correct.
 ```
-bool ORP_Verify_edge(int hosts, int switches, int radix, int lines, void *edge);
+bool ORP_Verify_edge(int hosts, int switches, int radix, int lines, int edge[lines][2]);
 ```
 * [IN] hosts : Number of hosts.
 * [IN] switches : Number of switches.
