@@ -81,7 +81,7 @@ $ make [serial|threads|all]
 * The host cannot connect to the host.
 * For example, see "sample/graph/".
 
-Following figure and its edge file are examples of a graph (h = 15, s = 4, r = 6), which is referred to [1].
+Following figure and its edge file are examples of a graph (h = 15, s = 4, r = 6), which is referred to ref. [1].
 
 ![](misc/img/sample.png)
 
@@ -292,6 +292,15 @@ bool ORP_Verify_edge(int hosts, int switches, int radix, int lines, int edge[lin
 * [IN] edge : Edge list.
 * [RETURN] Whether the edge properties are correct.
 
+### Estimate the optimal number of switches
+Estimate the optimal number of switches based on ref. [1].
+```
+int ORP_Optimize_switches(int hosts, int radix);
+```
+* [IN] hosts : Number of hosts.
+* [IN] radix : Radix of the switch.
+* [RETURN] Estimated the optimal number of switches
+
 ### Convert an edge list to an adjacency matrix
 ```
 void ORP_Conv_edge2adjacency(int hosts, int switches, int radix, int lines, int edge[lines][2], int adjacency[switches][radix])
@@ -349,7 +358,7 @@ void ORP_Srand(unsigned int seed)
 
 ### Generate a random graph
 Generate a graph with randomly connected vertices. Note that the graph may contain multiple edges and loops.
-When assigned_evenly=true, it assigns evenly hosts to switches.
+When assign_evenly=true, it assigns evenly hosts to switches.
 ```
 void* ORP_Generate_random(int hosts, int switches, int radix, bool assign_evenly, int *lines, int *h_degree, int *s_degree)
 ```

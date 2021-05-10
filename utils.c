@@ -45,6 +45,75 @@ void ORP_Free(uint64_t *a, const bool enable_avx2)
 #endif
 }
 
+double moore_bound(const double nodes, const double degree)
+{
+  if(degree + 1 >= nodes)
+    return 1;
+  
+  double diam = -1, n = 1, r = 1, aspl = 0.0, prev_tmp;
+  while(1){
+    double tmp = n + degree * pow(degree-1, r-1);
+    if(tmp >= nodes || (r > 1 && prev_tmp == tmp))
+      break;
+    
+    n = tmp;
+    aspl += r * degree * pow(degree-1, r-1);
+    diam = r++;
+    prev_tmp = tmp;
+  }
+
+  diam++;
+  aspl += diam * (nodes - n);
+  aspl /= (nodes - 1);
+
+  return aspl;
+}
+
+void CHECK_PARAMETERS(const int hosts, const int switches, const int radix)
+{
+  if(hosts < 3)
+    ERROR("Hosts (%d) >= 3\n", hosts);
+  else if(switches < 4)
+    ERROR("Switches (%d) >= 4\n", switches); // It is troublesome to make the case of switches = 1,2,3.
+  else if(radix < 3)
+    ERROR("Radix (%d) >= 3\n", radix);
+  else if(switches*radix-2*(switches-1) < hosts)
+    ERROR("Switches (%d) * Radix (%d) - 2 * (Switches (%d) - 1) >= Host (%d))\n",
+          switches, radix, switches, hosts);
+}
+
+// This function is based on the following paper.
+//   Ryota Yasudo, Michihiro Koibuchi, Koji Nakano.
+//   Designing High-Performance Interconnection Networks with Host-Switch Graphs.
+//   IEEE Transactions on Parallel and Distributed Systems, 30(2), 315-330. 2019.
+//   https://doi.org/10.1109/TPDS.2018.2864286
+static double continuous_moore_bound(const int hosts, const int switches, const int radix)
+{
+  double h = hosts;
+  double s = switches;
+  double r = radix;
+  return moore_bound(s,r-h/s)*(s*h-h)/(s*h-s)+2;
+}
+
+int ORP_Optimize_switches(const int hosts, const int radix)
+{
+  if(hosts < 3)
+    ERROR("Hosts (%d) >= 3\n", hosts);
+  else if(radix < 3)
+    ERROR("Radix (%d) >= 3\n", radix);
+  
+  int best_switches = 4;
+  double min_lbound = DBL_MAX;
+  for(int s=4;s<hosts;s++){
+    double tmp = continuous_moore_bound(hosts, s, radix);
+    if(tmp < min_lbound && s*radix-2*(s-1) >= hosts){
+      min_lbound = tmp;
+      best_switches = s;
+    }
+  }
+  return best_switches;
+}
+
 static bool IS_HOST(const int v, const int hosts)
 {
   return (v < hosts);
@@ -705,12 +774,7 @@ void ORP_Swap_adjacency(const int switches, const int radix, const int s_degree[
 void* ORP_Generate_random(const int hosts, const int switches, const int radix, const bool assign_evenly,
                           int *lines, int h_degree[switches], int s_degree[switches])
 {
-  if(hosts < 3)         ERROR("Hosts (%d) >= 3\n", hosts);
-  else if(switches < 4) ERROR("Switches (%d) >= 4\n", switches); // It is troublesome to make the case of switches = 1,2,3.
-  else if(radix < 3) 	ERROR("Radix (%d) >= 3\n", radix);
-  else if(switches*radix-2*(switches-1) < hosts)
-    ERROR("Switches (%d) * Radix (%d) - 2 * (Switches (%d) - 1) >= Host (%d))\n",
-          switches, radix, switches, hosts);
+  CHECK_PARAMETERS(hosts, switches, radix);
 
   // malloc edge
   *lines = (switches * radix - hosts)/2 + hosts;

@@ -8,6 +8,10 @@
 #define ERROR(...) do{fprintf(stderr,__VA_ARGS__); exit(1);}while(0)
 #define MAX_FILENAME_LENGTH 256
 #define NOT_DEFINED -1
+#define DEFAULT_SEED 0
+#define DEFAULT_NCALCS 10000
+#define DEFAULT_MAX_TEMP 100.00
+#define DEFAULT_MIN_TEMP 0.22
 
 static double uniform_rand()
 {
@@ -48,14 +52,26 @@ static double get_time()
 
 static void print_help(char *argv)
 {
-  ERROR("%s [-H hosts] [-S switches] [-R radix] [-f input] [-o output] [-s seed] [-n calcs] [-w max_temp] [-c min_temp] [-E] [-A]\n", argv);
+  fprintf(stderr, "%s [-H hosts] [-S switches] [-R radix] [-f input] [-o output] [-s seed] [-n calcs] [-w max_temp] [-c min_temp] [-A] [-E]\n", argv);
+  fprintf(stderr, "  -H : Number of hosts (Required when -f option is not specified)\n");
+  fprintf(stderr, "  -S : Number of switches (Set automatically when -f and -S are not specified).\n");
+  fprintf(stderr, "  -R : Radix (Required when -f is not specified)\n");
+  fprintf(stderr, "  -f : Input file\n");
+  fprintf(stderr, "  -o : Output file\n");
+  fprintf(stderr, "  -s : Random seed (Default: %d)\n", DEFAULT_SEED);
+  fprintf(stderr, "  -n : Number of calculations (Default: %d)\n", DEFAULT_NCALCS);
+  fprintf(stderr, "  -w : Max temperature (Default: %.2f)\n", (double)DEFAULT_MAX_TEMP);
+  fprintf(stderr, "  -c : Min temperature (Default: %.2f)\n", (double)DEFAULT_MIN_TEMP);
+  fprintf(stderr, "  -A : Diameter is not a consideration in acceptance\n");
+  fprintf(stderr, "  -E : Assign hosts evenly to switches\n");
+  exit(1);
 }
 
 static void set_args(const int argc, char **argv, int *hosts, int *switches, int *radix, char **infname, char **outfname,
 		     int *seed, long *ncalcs, double *max_temp, double *min_temp, bool *assign_evenly, bool *ASPL_priority)
 {
   int result;
-  while((result = getopt(argc,argv,"H:S:R:f:o:s:n:w:c:EA"))!=-1){
+  while((result = getopt(argc,argv,"H:S:R:f:o:s:n:w:c:AE"))!=-1){
     switch(result){
     case 'H':
       *hosts = atoi(optarg);
@@ -104,11 +120,11 @@ static void set_args(const int argc, char **argv, int *hosts, int *switches, int
       if(*min_temp <= 0)
         ERROR("MIN value > 0\n");
       break;
-    case 'E':
-      *assign_evenly = true;
-      break;
     case 'A':
       *ASPL_priority = true;
+      break;
+    case 'E':
+      *assign_evenly = true;
       break;
     default:
       print_help(argv[0]);
@@ -120,11 +136,11 @@ int main(int argc, char *argv[])
 {
   char *infname = NULL, *outfname = NULL;
   bool ASPL_priority = false, assign_evenly = false;
-  int hosts = NOT_DEFINED, switches = NOT_DEFINED, radix = NOT_DEFINED, seed = 0;
+  int hosts = NOT_DEFINED, switches = NOT_DEFINED, radix = NOT_DEFINED, seed = DEFAULT_SEED;
   int lines, diameter, current_diameter, best_diameter, low_diameter;
   int (*edge)[2], *h_degree, *s_degree;
-  long sum, best_sum, ncalcs = 10000;
-  double max_temp = 100, min_temp = 0.22, ASPL, current_ASPL, best_ASPL, low_ASPL;
+  long sum, best_sum, ncalcs = DEFAULT_NCALCS;
+  double max_temp = DEFAULT_MAX_TEMP, min_temp = DEFAULT_MIN_TEMP, ASPL, current_ASPL, best_ASPL, low_ASPL;
   ORP_Restore r;
 
   set_args(argc, argv, &hosts, &switches, &radix, &infname, &outfname, &seed,
@@ -140,14 +156,18 @@ int main(int argc, char *argv[])
     ORP_Set_degrees(hosts, switches, lines, edge, h_degree, s_degree);
   }
   else{
-    if(hosts == NOT_DEFINED || switches == NOT_DEFINED || radix == NOT_DEFINED)
+    if(hosts == NOT_DEFINED || radix == NOT_DEFINED)
       print_help(argv[0]);
+
+    if(switches == NOT_DEFINED)
+      switches = ORP_Optimize_switches(hosts, radix);
+
     h_degree = malloc(sizeof(int) * switches);
     s_degree = malloc(sizeof(int) * switches);
     edge     = ORP_Generate_random(hosts, switches, radix, assign_evenly, &lines, h_degree, s_degree);
   }
   
-  printf("Hosts = %d, Switches = %d, Degrees = %d\n", hosts, switches, radix);
+  printf("Hosts = %d, Switches = %d, Radix = %d\n", hosts, switches, radix);
   printf("Random seed = %d\n", seed);
   printf("Number of calculations = %ld\n", ncalcs);
   printf("Max, Min temperature = %f, %f\n", max_temp, min_temp);

@@ -8,22 +8,26 @@
 #define ERROR(...) do{fprintf(stderr,__VA_ARGS__); exit(1);}while(0)
 #define MAX_FILENAME_LENGTH 256
 #define NOT_DEFINED -1
+#define DEFAULT_SEED 0
+#define DEFAULT_NCALCS 10000
 
 static double uniform_rand()
 {
   return ((double)random()+1.0)/((double)RAND_MAX+2.0);
 }
 
-bool accept(const int current_diameter, const int diameter, const double current_ASPL, const double ASPL)
+bool accept(const int current_diameter, const int diameter, const double current_ASPL, const double ASPL,
+            const bool ASPL_priority)
 {
-  if(diameter < current_diameter){
+  if(diameter < current_diameter && !ASPL_priority){
     return true;
   }
-  else if(diameter > current_diameter){
+  else if(diameter > current_diameter && !ASPL_priority){
     return false;
   }
-  else
+  else{ //  diameter == current_diameter
     return (ASPL <= current_ASPL);
+  }
 }
 
 static double get_time()
@@ -35,14 +39,24 @@ static double get_time()
 
 static void print_help(char *argv)
 {
-  ERROR("%s [-H hosts] [-S switches] [-R radix] [-f input] [-o output] [-s seed] [-n calcs] [-E]\n", argv);
+  fprintf(stderr, "%s [-H hosts] [-S switches] [-R radix] [-f input] [-o output] [-s seed] [-n calcs] [-A] [-E]\n", argv);
+  fprintf(stderr, "  -H : Number of hosts (Required when -f option is not specified)\n");
+  fprintf(stderr, "  -S : Number of switches (Set automatically when -f and -S are not specified).\n");
+  fprintf(stderr, "  -R : Radix (Required when -f is not specified)\n");
+  fprintf(stderr, "  -f : Input file\n");
+  fprintf(stderr, "  -o : Output file\n");
+  fprintf(stderr, "  -s : Random seed (Default: %d)\n", DEFAULT_SEED);
+  fprintf(stderr, "  -n : Number of calculations (Default: %d)\n", DEFAULT_NCALCS);
+  fprintf(stderr, "  -A : Diameter is not a consideration in acceptance\n");
+  fprintf(stderr, "  -E : Assign hosts evenly to switches\n");
+  exit(1);
 }
 
 static void set_args(const int argc, char **argv, int *hosts, int *switches, int *radix, char **infname, char **outfname,
-		     int *seed, long *ncalcs, bool *assign_evenly)
+		     int *seed, long *ncalcs, bool *assign_evenly, bool *ASPL_priority)
 {
   int result;
-  while((result = getopt(argc,argv,"H:S:R:f:o:s:n:E"))!=-1){
+  while((result = getopt(argc,argv,"H:S:R:f:o:s:n:AE"))!=-1){
     switch(result){
     case 'H':
       *hosts = atoi(optarg);
@@ -81,6 +95,9 @@ static void set_args(const int argc, char **argv, int *hosts, int *switches, int
       if(*ncalcs < 0)
         ERROR("-n value >= 0\n");
       break;
+    case 'A':
+      *ASPL_priority = true;
+      break;
     case 'E':
       *assign_evenly = true;
       break;
@@ -93,15 +110,16 @@ static void set_args(const int argc, char **argv, int *hosts, int *switches, int
 int main(int argc, char *argv[])
 {
   char *infname = NULL, *outfname = NULL;
-  bool assign_evenly = false;
-  int hosts = NOT_DEFINED, switches = NOT_DEFINED, radix = NOT_DEFINED, seed = 0;
+  bool ASPL_priority = false, assign_evenly = false;
+  int hosts = NOT_DEFINED, switches = NOT_DEFINED, radix = NOT_DEFINED, seed = DEFAULT_SEED;
   int lines, diameter, current_diameter, best_diameter, low_diameter;
   int (*edge)[2], *h_degree, *s_degree;
-  long sum, best_sum, ncalcs = 10000;
+  long sum, best_sum, ncalcs = DEFAULT_NCALCS;
   double ASPL, current_ASPL, best_ASPL, low_ASPL;
   ORP_Restore r;
 
-  set_args(argc, argv, &hosts, &switches, &radix, &infname, &outfname, &seed, &ncalcs, &assign_evenly);
+  set_args(argc, argv, &hosts, &switches, &radix, &infname, &outfname, &seed,
+	   &ncalcs, &assign_evenly, &ASPL_priority);
   
   ORP_Srand(seed);
   if(infname){
@@ -113,14 +131,18 @@ int main(int argc, char *argv[])
     ORP_Set_degrees(hosts, switches, lines, edge, h_degree, s_degree);
   }
   else{
-    if(hosts == NOT_DEFINED || switches == NOT_DEFINED || radix == NOT_DEFINED)
+    if(hosts == NOT_DEFINED || radix == NOT_DEFINED)
       print_help(argv[0]);
+
+    if(switches == NOT_DEFINED)
+      switches = ORP_Optimize_switches(hosts, radix);
+
     h_degree = malloc(sizeof(int) * switches);
     s_degree = malloc(sizeof(int) * switches);
     edge     = ORP_Generate_random(hosts, switches, radix, assign_evenly, &lines, h_degree, s_degree);
   }
   
-  printf("Hosts = %d, Switches = %d, Degrees = %d\n", hosts, switches, radix);
+  printf("Hosts = %d, Switches = %d, Radix = %d\n", hosts, switches, radix);
   printf("Random seed = %d\n", seed);
   printf("Number of calculations = %ld\n", ncalcs);
   if(infname)
@@ -176,7 +198,7 @@ int main(int argc, char *argv[])
 	}
       }
       
-      if(accept(current_diameter, diameter, current_ASPL, ASPL)){
+      if(accept(current_diameter, diameter, current_ASPL, ASPL, ASPL_priority)){
 	current_diameter = diameter;
 	current_ASPL     = ASPL;
       }
@@ -196,8 +218,9 @@ int main(int argc, char *argv[])
   printf("ASPL Gap        = %.10f (%.10f - %.10f)\n", best_ASPL - low_ASPL, best_ASPL, low_ASPL);
   printf("Time            = %f sec.\n", hl_time);
   printf("Assign evenly?  = %s\n", (assign_evenly)? "Yes" : "No");
+  printf("ASPL priority?  = %s\n", (ASPL_priority)? "Yes" : "No");
   printf("Verify?         = %s\n", (ORP_Verify_edge(hosts, switches, radix, lines, edge))? "Yes" : "No");
-  
+
   if(outfname)
     ORP_Write_edge(hosts, switches, radix, lines, edge, outfname);
 
