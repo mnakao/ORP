@@ -1,4 +1,3 @@
-
 #include "common.h"
 #ifdef _OPENMP
 static int *_local_frontier;
@@ -65,7 +64,7 @@ double moore_bound(const double nodes, const double degree)
   diam++;
   aspl += diam * (nodes - n);
   aspl /= (nodes - 1);
-
+  
   return aspl;
 }
 
@@ -102,16 +101,19 @@ int ORP_Optimize_switches(const int hosts, const int radix)
   else if(radix < 3)
     ERROR("Radix (%d) >= 3\n", radix);
   
-  int best_switches = 4;
-  double min_lbound = DBL_MAX;
-  for(int s=4;s<hosts;s++){
-    double tmp = continuous_moore_bound(hosts, s, radix);
-    if(tmp < min_lbound && s*radix-2*(s-1) >= hosts){
-      min_lbound = tmp;
-      best_switches = s;
+  int s = 3;
+  double prev = DBL_MAX;
+  while(1){
+    if(s*radix-2*(s-1) >= hosts){
+      double tmp = continuous_moore_bound(hosts, s, radix);
+      if(prev <= tmp)
+        break;
+      prev = tmp;
     }
+    s++;
   }
-  return best_switches;
+
+  return s - 1;
 }
 
 static bool IS_HOST(const int v, const int hosts)
