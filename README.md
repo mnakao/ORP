@@ -247,6 +247,15 @@ void ORP_Write_edge(int hosts, int switches, int radix, int lines, int edge[line
 * [IN] edge : Edge list.
 * [OUT] fname : File name of a graph.
 
+### Write a switch list to a file
+```
+void ORP_Write_switch(int hosts, int lines, int edge[lines][2], char *fname)
+```
+* [IN] hosts : Number of hosts.
+* [IN] lines : Number of lines in an edge list.
+* [IN] edge : Edge list.
+* [OUT] fname : File name of a graph.
+
 ### Print an adjacency matrix
 ```
 void ORP_Print_adjacency(int hosts, int switches, int radix, int s_degree[switches], int adjacency[switches][radix])

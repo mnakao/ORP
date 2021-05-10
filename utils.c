@@ -372,6 +372,20 @@ void ORP_Print_switch(const int hosts, const int lines, const int (*edge)[2])
       printf("%d %d\n", edge[i][0]-hosts, edge[i][1]-hosts);
 }
 
+void ORP_Write_switch(const int hosts, const int lines, const int edge[lines][2], char *fname)
+{
+  FILE *fp = NULL;
+  
+  if((fp = fopen(fname, "w")) == NULL)
+    ERROR("Cannot open %s\n", fname);
+  
+  for(int i=0;i<lines;i++)
+    if(IS_SWITCH(edge[i][0],hosts) && IS_SWITCH(edge[i][1],hosts))
+      fprintf(fp, "%d %d\n", edge[i][0], edge[i][1]);
+
+  fclose(fp);
+}
+
 double ORP_Get_mem_usage(const int kind, const int switches, const int symmetries)
 {
   double AB_mem;
