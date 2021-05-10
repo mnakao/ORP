@@ -23,7 +23,7 @@
 #endif
 
 typedef struct {
-  int u[2], v[2], u_d[2], v_d[2], rand, op;
+  int u[2], v[2], u_d[2], v_d[2], op;
 } ORP_Restore;
 
 #define ERROR(...) do{fprintf(stderr,__VA_ARGS__); exit(1);}while(0)

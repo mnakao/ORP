@@ -621,11 +621,10 @@ int ORP_top_down_step(const int level, const int num_frontier, const int* restri
 #endif
 
 static void backup_restore(const int u[2], const int u_d[2], const int v[2], const int v_d[2],
-                           const int rand, const int op, ORP_Restore *r)
+                           const int op, ORP_Restore *r)
 {
   if(r == NULL) return;
 
-  r->rand = rand;
   r->op   = op;
   for(int i=0;i<2;i++){
     r->u[i]   = u[i];
@@ -645,18 +644,10 @@ void ORP_Restore_adjacency(const ORP_Restore r, const int radix, int *h_degree, 
     }
   }
   else{ // OP_SWING
-    if(r.rand == 1){
-       adjacency[r.u[0]][s_degree[r.u[0]]]   = r.v[0];
-       adjacency[r.v[0]][r.v_d[0]]           = r.u[0];
-       adjacency[r.u[1]][s_degree[r.u[1]]-1] = NOT_DEFINED;
-       h_degree[r.u[0]]--; s_degree[r.u[0]]++; h_degree[r.u[1]]++; s_degree[r.u[1]]--;
-    }
-    else{
-      adjacency[r.v[0]][s_degree[r.v[0]]]   = r.u[0];
-      adjacency[r.u[0]][r.u_d[0]]           = r.v[0];
-      adjacency[r.u[1]][s_degree[r.u[1]]-1] = NOT_DEFINED;
-      h_degree[r.v[0]]--; s_degree[r.v[0]]++; h_degree[r.u[1]]++; s_degree[r.u[1]]--;
-    }
+    adjacency[r.u[0]][s_degree[r.u[0]]]   = r.v[0];
+    adjacency[r.v[0]][r.v_d[0]]           = r.u[0];
+    adjacency[r.u[1]][s_degree[r.u[1]]-1] = NOT_DEFINED;
+    h_degree[r.u[0]]--; s_degree[r.u[0]]++; h_degree[r.u[1]]++; s_degree[r.u[1]]--;
   }
 }
 
@@ -700,24 +691,15 @@ bool swing_adjacency(const int switches, const int radix, int h_degree[switches]
   // search index
   v_d[0] = search_index(v[0], u[0], u_d[0], s_degree, radix, adjacency);
 
-  if(get_random(2)){ // u[0]--v[0], u[1]--h[0] -> u[0]--h[0], u[1]--v[0]
-    if(s_degree[u[0]] == 1) return false;
-    backup_restore(u, u_d, v, v_d, 1, OP_SWING, r);
-    adjacency[v[0]][v_d[0]]           = u[1];
-    adjacency[u[0]][u_d[0]]           = adjacency[u[0]][s_degree[u[0]]-1];
-    adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED;
-    adjacency[u[1]][s_degree[u[1]]]   = v[0];
-    h_degree[u[0]]++; s_degree[u[0]]--; h_degree[u[1]]--; s_degree[u[1]]++;
-  }
-  else{ // u[0]--v[0], u[1]--h[0] -> u[0]--u[1] v[0]--h[0]
-    if(s_degree[v[0]] == 1) return false;
-    backup_restore(u, u_d, v, u_d, 0, OP_SWING, r);
-    adjacency[u[0]][u_d[0]]           = u[1];
-    adjacency[v[0]][v_d[0]]           = adjacency[v[0]][s_degree[v[0]]-1];
-    adjacency[v[0]][s_degree[v[0]]-1] = NOT_DEFINED;
-    adjacency[u[1]][s_degree[u[1]]]   = u[0];
-    h_degree[v[0]]++; s_degree[v[0]]--; h_degree[u[1]]--; s_degree[u[1]]++;
-  }
+  // u[0]--v[0], u[1]--h[0] -> u[0]--h[0], u[1]--v[0]
+  if(s_degree[u[0]] == 1) return false;
+  backup_restore(u, u_d, v, v_d, OP_SWING, r);
+  adjacency[v[0]][v_d[0]]           = u[1];
+  adjacency[u[0]][u_d[0]]           = adjacency[u[0]][s_degree[u[0]]-1];
+  adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED;
+  adjacency[u[1]][s_degree[u[1]]]   = v[0];
+  h_degree[u[0]]++; s_degree[u[0]]--; h_degree[u[1]]--; s_degree[u[1]]++;
+
   return true;
 }
 
@@ -755,20 +737,13 @@ void ORP_Swap_adjacency(const int switches, const int radix, const int s_degree[
   v_d[1] = search_index(v[1], u[1], u_d[1], s_degree, radix, adjacency);
 
   // backup for restore
-  backup_restore(u, u_d, v, v_d, NOT_USED, OP_SWAP, r);
+  backup_restore(u, u_d, v, v_d, OP_SWAP, r);
 
-  if(get_random(2)){ // u[0]--v[0], u[1]--v[1] -> u[0]--v[1], u[1]--v[0]
-    adjacency[u[0]][u_d[0]] = v[1];
-    adjacency[u[1]][u_d[1]] = v[0];
-    adjacency[v[0]][v_d[0]] = u[1];
-    adjacency[v[1]][v_d[1]] = u[0];
-  }
-  else{ // u[0]--v[0], u[1]--v[1] -> u[0]--u[1], v[0]--v[1]
-    adjacency[u[0]][u_d[0]] = u[1];
-    adjacency[u[1]][u_d[1]] = u[0];
-    adjacency[v[0]][v_d[0]] = v[1];
-    adjacency[v[1]][v_d[1]] = v[0];
-  }
+  // u[0]--v[0], u[1]--v[1] -> u[0]--v[1], u[1]--v[0]
+  adjacency[u[0]][u_d[0]] = v[1];
+  adjacency[u[1]][u_d[1]] = v[0];
+  adjacency[v[0]][v_d[0]] = u[1];
+  adjacency[v[1]][v_d[1]] = u[0];
 }
 
 void* ORP_Generate_random(const int hosts, const int switches, const int radix, const bool assign_evenly,
