@@ -388,19 +388,19 @@ void ORP_Write_switch(const int hosts, const int lines, const int edge[lines][2]
 
 double ORP_Get_mem_usage(const int kind, const int switches, const int symmetries)
 {
-  double AB_mem;
+  double mem;
   if(kind == ASPL_MATRIX){
-    AB_mem  = switches*((double)switches/(4*symmetries));
-    AB_mem += sizeof(int) * switches * switches;
+    mem  = ((double)switches * switches * sizeof(uint64_t) * 2)/UINT64_BITS;
+    mem += (double)switches * switches * sizeof(char);
   }
   else{ // kind == ASPL_BFS
-    AB_mem  = switches * (sizeof(int)*3 + sizeof(char));
+    mem  = (double)switches * 3 * sizeof(int);
 #ifdef _OPENMP
-    AB_mem += sizeof(int) * switches * omp_get_max_threads();
+    mem += (double)switches * sizeof(int) * omp_get_max_threads();
 #endif
   }
 
-  return AB_mem/(1024*1024); // to Mbytes
+  return mem/(1024*1024); // to Mbytes
 }
 
 int ORP_Get_kind()
