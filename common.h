@@ -39,11 +39,4 @@ typedef struct {
 #define OP_SWAP            0
 #define	OP_SWING           1
 
-#if defined(__ARM_NEON) || defined(__FUJITSU)
-#define POPCNT(a) __builtin_popcountl(a)
-#elif defined(__AVX2__)
-#define POPCNT(a) _mm_popcnt_u64(a)
-#else
-#define POPCNT(a) __builtin_popcountl(a)
-#endif
 #endif
