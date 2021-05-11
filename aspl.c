@@ -41,7 +41,7 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
   }
 
   *diameter = 1;
-  int level = 0;
+  long level = 2;
   for(int kk=0;kk<_switches;kk++){
     ORP_Matmul(_A, _B, _switches, _radix, s_degree, adjacency, _elements, _symmetries, _enable_avx2);
 
@@ -51,8 +51,8 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
       for(int j=i+1;j<_switches;j++){
         int ii = i*_switches+j;
         if(_bitmap[ii] == NOT_VISITED && (_B[i*_elements+(j/UINT64_BITS)] & (0x1ULL<<(j%UINT64_BITS)))){
-          _bitmap[ii] = 1;
-          local_sum += ((long)level + 2) * h_degree[i] * h_degree[j];
+          _bitmap[ii] = VISITED;
+          local_sum += level * h_degree[i] * h_degree[j];
           k++;
         }
       }
