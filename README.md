@@ -200,11 +200,11 @@ void ORP_Set_aspl(int h_degree[switches], int s_degree[switches], int adjacency[
 In the case of the above figure, h_degree, s_degree and adjacency are as follows.
 * h_degree[] = {4, 3, 4, 4}
 * s_degree[] = {1, 3, 2, 2}
-* adjacency[][] = {{1,-1,-1,-1},{0,2,3,-1},{1,3,-1,-1},{1,2,-1,-1}}
+* adjacency[][] = {{1,-1,-1,-1,-1,-1},{0,2,3,-1,-1,-1},{1,3,-1,-1,-1,-1},{1,2,-1,-1,-1,-1}}
 
 "h_degree[0]=4" means that s0 connects to four hosts.
 "s_degree[1]=3" means that s1 connects to three switches.
-"adjacency[2][]={1,3,-1,-1}" means that s2 connects to s1 and s3 (-1 means no value).
+"adjacency[2][]={1,3,-1,-1,-1,-1}" means that s2 connects to s1 and s3 (-1 means no value).
 
 ### Finalize
 Release the resources allocated in ORP_Init_aspl().
