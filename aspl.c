@@ -19,7 +19,7 @@ bool ORP_Check_profile();
 int ORP_Get_kind();
 int ORP_top_down_step(const int level, const int num_frontier, const int* restrict adjacency,
                       const int switches, const int radix, const int* restrict ports, const int symmetries,
-                      int* restrict frontier, int* restrict next, int* restrict distance, char* restrict bitmap);
+                      int* restrict frontier, int* restrict next, int* restrict distance);
 extern double ORP_Get_time();
 
 static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree, const int* restrict adjacency,
@@ -94,7 +94,6 @@ void ORP_Init_aspl_s(const int hosts, const int switches, const int radix, const
     _bitmap = malloc(sizeof(char) * switches * switches);               // char _bitmap[switches][switches];
   }
   else{ // _kind == ASPL_BFS
-    _bitmap   = malloc(sizeof(char) * switches);
     _frontier = malloc(sizeof(int)  * switches);
     _distance = malloc(sizeof(int)  * switches);
     _next     = malloc(sizeof(int)  * switches);
@@ -129,15 +128,14 @@ static void aspl_bfs(const int* restrict h_degree, const int* restrict s_degree,
     
     int num_frontier = 1, level = 0;
     for(int i=0;i<_switches;i++)
-      _bitmap[i] = NOT_VISITED;
+      _distance[i] = NOT_USED;
     
     _frontier[0] = s;
     _distance[s] = level;
-    _bitmap[s]   = VISITED;
     
     while(1){
       num_frontier = ORP_top_down_step(level++, num_frontier, adjacency, _switches, _radix, s_degree, 
-				       _symmetries, _frontier, _next, _distance, _bitmap);
+				       _symmetries, _frontier, _next, _distance);
       if(num_frontier == 0) break;
 
       int *tmp = _frontier;
@@ -149,7 +147,7 @@ static void aspl_bfs(const int* restrict h_degree, const int* restrict s_degree,
 
     if(s == 0){
       for(int i=1;i<_switches;i++)
-        if(_bitmap[i] == NOT_VISITED)
+        if(_distance[i] == NOT_USED)
           reached = false;
       
       if(!reached){
@@ -175,7 +173,6 @@ void ORP_Finalize_aspl()
     free(_bitmap);
   }
   else{ // _kind == ASPL_BFS
-    free(_bitmap);
     free(_frontier);
     free(_distance);
     free(_next);

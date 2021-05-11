@@ -419,9 +419,9 @@ void ORP_Restore_adjacency(ORP_Restore r, int radix, int h_degree[switches], int
 * Xeon Gold 6126 2.6GHz (12cores) x 2, gcc/8.3.1
 * Graph with (hosts, switches, radix) = (65536, 3000, 64)
 * http://research.nii.ac.jp/graphgolf/solutions/h65536r64k5l453.20210426-ftr2ae.edges.gz
-  * libapsp.a with BFS : 602.2 msec.
-  * libapsp.a with matrix method : 52.6 msec.
-  * libapsp_threads.a with matrix method : 9.9 msec. (12 threads, 1 CPU), 5.4 msec. (24 threads, 2 CPUs)
+  * libapsp.a with BFS : 420.6 msec.
+  * libapsp.a with matrix method : 67.9 msec.
+  * libapsp_threads.a with matrix method : 9.7 msec. (12 threads, 1 CPU), 6.0 msec. (24 threads, 2 CPUs)
 
 ## Reference
 [1] Ryota Yasudo et al. ``Designing High-Performance Interconnection Networks with Host-Switch Graphs``, in IEEE Transactions on Parallel and Distributed Systems, vol. 30, no. 2, pp. 315-330, 1 Feb. 2019, doi: 10.1109/TPDS.2018.2864286.

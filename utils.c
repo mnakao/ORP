@@ -581,7 +581,7 @@ static bool simple_bfs(const int switches, const int radix, int* s_degree, int (
 #ifdef _OPENMP
 int ORP_top_down_step(const int level, const int num_frontier, const int* restrict adjacency, 
                       const int switches, const int radix, const int* restrict s_degree, const int symmetries,
-                      int* restrict frontier, int* restrict next, int* restrict distance, char* restrict bitmap)
+                      int* restrict frontier, int* restrict next, int* restrict distance)
 {
   int count = 0;
   if(symmetries == 1){
@@ -593,8 +593,7 @@ int ORP_top_down_step(const int level, const int num_frontier, const int* restri
         int v = frontier[i];
         for(int j=0;j<s_degree[v];j++){
           int n = *(adjacency + v * radix + j);
-          if(bitmap[n] == NOT_VISITED){
-            bitmap[n]   = VISITED;
+          if(distance[n] == NOT_USED){
             distance[n] = level;
             _local_frontier[local_count++] = n;
           }
@@ -622,8 +621,7 @@ int ORP_top_down_step(const int level, const int num_frontier, const int* restri
       int v = frontier[i];
       for(int j=0;j<s_degree[v];j++){
         int n = *(adjacency + v * radix + j);
-        if(bitmap[n] == NOT_VISITED){
-          bitmap[n]   = VISITED;
+        if(distance[n] == NOT_USED){
           distance[n] = level;
           next[count++] = n;
 	}
