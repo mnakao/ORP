@@ -658,10 +658,11 @@ void ORP_Restore_adjacency(const ORP_Restore r, const int radix, int *h_degree, 
     }
   }
   else{ // OP_SWING
-    adjacency[r.u[0]][s_degree[r.u[0]]]   = r.v[0];
-    adjacency[r.v[0]][r.v_d[0]]           = r.u[0];
-    adjacency[r.u[1]][s_degree[r.u[1]]-1] = NOT_DEFINED;
     h_degree[r.u[0]]--; s_degree[r.u[0]]++; h_degree[r.u[1]]++; s_degree[r.u[1]]--;
+    adjacency[r.v[0]][r.v_d[0]]           = r.u[0];
+    adjacency[r.u[0]][s_degree[r.u[0]]-1] = adjacency[r.u[0]][r.u_d[0]];
+    adjacency[r.u[0]][r.u_d[0]]           = r.v[0];
+    adjacency[r.u[1]][s_degree[r.u[1]]]   = NOT_DEFINED;
   }
 }
 
