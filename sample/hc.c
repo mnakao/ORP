@@ -47,7 +47,7 @@ static void print_help(char *argv)
   fprintf(stderr, "  -o : Output file\n");
   fprintf(stderr, "  -s : Random seed (Default: %d)\n", DEFAULT_SEED);
   fprintf(stderr, "  -n : Number of calculations (Default: %d)\n", DEFAULT_NCALCS);
-  fprintf(stderr, "  -A : Diameter is not a consideration in acceptance\n");
+  fprintf(stderr, "  -A : ASPL takes precedence over Diameter\n");
   fprintf(stderr, "  -E : Assign hosts evenly to switches\n");
   exit(1);
 }
