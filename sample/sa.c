@@ -18,7 +18,7 @@ static double uniform_rand()
   return ((double)random()+1.0)/((double)RAND_MAX+2.0);
 }
 
-bool accept(const int hosts, const int current_diameter, const int diameter, const double current_ASPL,
+bool accept(const int switches, const int current_diameter, const int diameter, const double current_ASPL,
             const double ASPL, const double temp, const bool ASPL_priority)
 {
   if(diameter < current_diameter && !ASPL_priority){
@@ -32,7 +32,7 @@ bool accept(const int hosts, const int current_diameter, const int diameter, con
       return true;
     }
     else{
-      double diff = ((current_ASPL-ASPL)*hosts*(hosts-1));
+      double diff = ((current_ASPL-ASPL)*switches*switches);
       if(exp(diff/temp) > uniform_rand()){
         return true;
       }
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
 	}
       }
       
-      if(accept(hosts, current_diameter, diameter, current_ASPL, ASPL, temp, ASPL_priority)){
+      if(accept(switches, current_diameter, diameter, current_ASPL, ASPL, temp, ASPL_priority)){
 	current_diameter = diameter;
 	current_ASPL     = ASPL;
       }
