@@ -15,12 +15,16 @@ endif
 LIBS=../liborp.a -lm
 THREADS_LIBS=../liborp_threads.a -lm
 TMP := $(shell mktemp)
-serial: sa_ref1.x detect_temp.x detect_switches.c
-threads: threads_sa_ref1.x threads_detect_temp.x
+serial: sa_ref1.x detect_temp.x detect_switches.x sa_ref2.x
+threads: threads_sa_ref1.x threads_detect_temp.x threads_sa_ref2.x
 all: serial threads
 sa_ref1.x: sa_ref1.c ../liborp.a ../include/orp.h
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
+sa_ref2.x: sa_ref2.c ../liborp.a ../include/orp.h
+	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 threads_sa_ref1.x: sa_ref1.c ../liborp_threads.a ../include/orp.h
+	$(CC) $(CFLAGS) -o $@ $< $(LIBS) $(OMP_FLAGS)
+threads_sa_ref2.x: sa_ref2.c ../liborp_threads.a ../include/orp.h
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS) $(OMP_FLAGS)
 detect_temp.x: detect_temp.c ../liborp.a ../include/orp.h
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)

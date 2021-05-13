@@ -1,4 +1,4 @@
- #include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -12,11 +12,6 @@
 #define DEFAULT_NCALCS 10000
 #define DEFAULT_MAX_TEMP 100.00
 #define DEFAULT_MIN_TEMP 0.22
-
-static int get_random(const int max)
-{
-  return (int)(rand()*((double)max)/(1.0+RAND_MAX));
-}
 
 static double uniform_rand()
 {
@@ -94,7 +89,7 @@ static void set_args(const int argc, char **argv, int *hosts, int *switches, int
       break;
     case 'f':
       if(strlen(optarg) > MAX_FILENAME_LENGTH)
-        ERROR("Input filename is long (%s).\n", optarg);
+	ERROR("Input filename is long (%s).\n", optarg);
       *infname = malloc(MAX_FILENAME_LENGTH);
       strcpy(*infname, optarg);
       break;
@@ -133,27 +128,6 @@ static void set_args(const int argc, char **argv, int *hosts, int *switches, int
   }
 }
 
-static int search_index(const int v, const int target, const int exclusion,
-                        const int *s_degree, const int radix, const int (*adjacency)[radix])
-{
-  if(v == target){
-    for(int i=0;i<s_degree[v];i++){
-      if(adjacency[v][i] == target && i != exclusion){
-        return i;
-      }
-    }
-  }
-  else{
-    for(int i=0;i<s_degree[v];i++){
-      if(adjacency[v][i] == target){
-        return i;
-      }
-    }
-  }
-
-  ERROR("Something Wrong (id=0)\n");
-}
-
 int main(int argc, char *argv[])
 {
   char *infname = NULL, *outfname = NULL;
@@ -166,7 +140,7 @@ int main(int argc, char *argv[])
   ORP_Restore r;
 
   set_args(argc, argv, &hosts, &switches, &radix, &infname, &outfname, &seed,
-           &ncalcs, &max_temp, &min_temp, &ASPL_priority);
+	   &ncalcs, &max_temp, &min_temp, &ASPL_priority);
   
   ORP_Srand(seed);
   if(infname){
@@ -188,7 +162,7 @@ int main(int argc, char *argv[])
     s_degree = malloc(sizeof(int) * switches);
     edge     = ORP_Generate_random(hosts, switches, radix, false, &lines, h_degree, s_degree);
   }
-    
+  
   printf("Hosts = %d, Switches = %d, Radix = %d\n", hosts, switches, radix);
   printf("Random seed = %d\n", seed);
   printf("Number of calculations = %ld\n", ncalcs);
@@ -202,7 +176,7 @@ int main(int argc, char *argv[])
   int (*best_adjacency)[radix] = malloc(sizeof(int) * switches * radix);
   int *best_h_degree           = malloc(sizeof(int) * switches);
   int *best_s_degree           = malloc(sizeof(int) * switches);
-   
+
   ORP_Conv_edge2adjacency(hosts, switches, radix, lines, edge, adjacency);
   ORP_Init_aspl(hosts, switches, radix);
   ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
@@ -213,7 +187,7 @@ int main(int argc, char *argv[])
   memcpy(best_adjacency, adjacency, sizeof(int) * switches * radix);
   memcpy(best_h_degree,  h_degree,  sizeof(int) * switches);
   memcpy(best_s_degree,  s_degree,  sizeof(int) * switches);
-  
+
   ORP_Set_lbounds(hosts, radix, &low_diameter, &low_ASPL);
   double sa_time = get_time();
   if(diameter == low_diameter && ASPL == low_ASPL){
@@ -231,34 +205,9 @@ int main(int argc, char *argv[])
         j++;
       }
 
-      int u[2], v[2], u_d[2], v_d[2];
-      while(1){
-        u[0] = get_random(switches);
-        u[1] = get_random(switches);        
-        if(u[0] == u[1] || s_degree[u[0]] == 1) continue;
-        
-        u_d[0] = get_random(s_degree[u[0]]);
-        v[0]   = adjacency[u[0]][u_d[0]];
-        if(v[0] == u[1]) continue;
-        
-        u_d[1] = get_random(s_degree[u[1]]);
-        v[1]   = adjacency[u[1]][u_d[1]];
-        if(v[1] == u[0] || v[0] == v[1] || h_degree[v[1]] == 0) continue;
-        break;
-      }
-      
-      v_d[0] = search_index(v[0], u[0], u_d[0], s_degree, radix, adjacency);
-      v_d[1] = search_index(v[1], u[1], u_d[1], s_degree, radix, adjacency);
-
-      // SWING
-      adjacency[v[0]][v_d[0]]           = v[1];
-      adjacency[u[0]][u_d[0]]           = adjacency[u[0]][s_degree[u[0]]-1];
-      adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED;
-      adjacency[v[1]][s_degree[v[1]]]   = v[0];
-      h_degree[u[0]]++; s_degree[u[0]]--; h_degree[v[1]]--; s_degree[v[1]]++;
-
+      ORP_Swing_adjacency(switches, radix, h_degree, s_degree, &r, adjacency);
       ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
-
+      
       if(diameter < best_diameter || (diameter == best_diameter && ASPL < best_ASPL)){
 	best_diameter = diameter;
 	best_sum      = sum;
@@ -277,22 +226,13 @@ int main(int argc, char *argv[])
 	current_ASPL     = ASPL;
       }
       else{
-        // UNDO
-        h_degree[u[0]]--; s_degree[u[0]]++; h_degree[v[1]]++; s_degree[v[1]]--;
-        adjacency[v[0]][v_d[0]]           = u[0];
-        adjacency[u[0]][s_degree[u[0]]-1] = adjacency[u[0]][u_d[0]];
-        adjacency[u[0]][u_d[0]]           = v[0];
-        adjacency[v[1]][s_degree[v[1]]]   = NOT_DEFINED;
+        ORP_Restore_adjacency(r, radix, h_degree, s_degree, adjacency);
 
-        // SWAP
-        adjacency[u[0]][u_d[0]] = u[1];
-        adjacency[u[1]][u_d[1]] = u[0];
-        adjacency[v[0]][v_d[0]] = v[1];
-        adjacency[v[1]][v_d[1]] = v[0];
+        ORP_Swap_adjacency(switches, radix, s_degree, &r, adjacency);
         ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
         temp *= cooling_rate;
         i++;
-        
+
         if(diameter < best_diameter || (diameter == best_diameter && ASPL < best_ASPL)){
           best_diameter = diameter;
           best_sum      = sum;
@@ -311,11 +251,7 @@ int main(int argc, char *argv[])
           current_ASPL     = ASPL;
         }
         else{
-          // UNDO
-          adjacency[u[0]][u_d[0]] = v[0];
-          adjacency[u[1]][u_d[1]] = v[1];
-          adjacency[v[0]][v_d[0]] = u[0];
-          adjacency[v[1]][v_d[1]] = u[1];
+          ORP_Restore_adjacency(r, radix, h_degree, s_degree, adjacency);     
         }
       }
       temp *= cooling_rate;
