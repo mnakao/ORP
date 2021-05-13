@@ -687,15 +687,15 @@ static int search_index(const int v, const int target, const int exclusion,
   ERROR("Something Wrong (id=0)\n");
 }
 
-bool swing_adjacency(const int switches, const int radix, int h_degree[switches], int s_degree[switches],
-                     ORP_Restore *r, int adjacency[switches][radix])
+void ORP_Swing_adjacency(const int switches, const int radix, int h_degree[switches], int s_degree[switches],
+                         ORP_Restore *r, int adjacency[switches][radix])
 {
   int u[2], v[2], u_d[2], v_d[2]; // u_d[1], v[1], and v_d[1] are not used because it is a host.
-
+  
   while(1){
     u[0] = get_random(switches);
     u[1] = get_random(switches);
-    if(u[0] == u[1] || h_degree[u[1]] == 0) continue;
+    if(u[0] == u[1] || s_degree[u[0]] == 1 || h_degree[u[1]] == 0) continue;
 
     u_d[0] = get_random(s_degree[u[0]]);
     v[0]   = adjacency[u[0]][u_d[0]];
@@ -707,24 +707,12 @@ bool swing_adjacency(const int switches, const int radix, int h_degree[switches]
   v_d[0] = search_index(v[0], u[0], u_d[0], s_degree, radix, adjacency);
 
   // u[0]--v[0], u[1]--h[0] -> u[0]--h[0], u[1]--v[0]
-  if(s_degree[u[0]] == 1) return false;
   backup_restore(u, u_d, v, v_d, OP_SWING, r);
   adjacency[v[0]][v_d[0]]           = u[1];
   adjacency[u[0]][u_d[0]]           = adjacency[u[0]][s_degree[u[0]]-1];
   adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED;
   adjacency[u[1]][s_degree[u[1]]]   = v[0];
   h_degree[u[0]]++; s_degree[u[0]]--; h_degree[u[1]]--; s_degree[u[1]]++;
-
-  return true;
-}
-
-void ORP_Swing_adjacency(const int switches, const int radix, int h_degree[switches], int s_degree[switches],
-                         ORP_Restore *r, int adjacency[switches][radix])
-{
-  while(1){
-    if(swing_adjacency(switches, radix, h_degree, s_degree, r, adjacency))
-      break;
-  }
 }
 
 void ORP_Swap_adjacency(const int switches, const int radix, const int s_degree[switches],
