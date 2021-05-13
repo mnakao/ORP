@@ -31,6 +31,6 @@ detect_temp.x: detect_temp.c ../liborp.a ../include/orp.h
 threads_detect_temp.x: detect_temp.c ../liborp_threads.a ../include/orp.h
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS) $(OMP_FLAGS)
 detect_switches.x: detect_switches.c
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $< -lm
 clean:
 	rm -f *.x *.o *~
