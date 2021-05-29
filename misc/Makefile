@@ -1,4 +1,4 @@
-misc/Makefile ifeq ($(ENV), intel)
+ifeq ($(ENV), intel)
   CC=icc
   CFLAGS=-O3 -std=gnu99 -mavx2 -I../include
   OMP_FLAGS=-qopenmp
