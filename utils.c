@@ -407,12 +407,13 @@ int ORP_Get_kind()
 {
   int kind  = ASPL_MATRIX;
   char *val = getenv("ORP_ASPL");
-  if(val)
+  if(val){
     if(strcmp(val, "BFS") == 0)
       kind = ASPL_BFS;
     else
       ERROR("Unknown ORP_ASPL value (%s)\n", val);
-
+  }
+  
   return kind;
 }
 
@@ -423,13 +424,14 @@ bool ORP_Check_profile()
   if(first){
     first = false;
     char *val = getenv("ORP_PROFILE");
-    if(val)
+    if(val){
       if(atoi(val) == 1)
         enable_profile = true;
       else if(atoi(val) == 0)
         enable_profile = false;
       else
         ERROR("Unknown ORP_PROFILE value (%d)\n", atoi(val));
+    }
   }
   
   return enable_profile;
