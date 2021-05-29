@@ -4,7 +4,7 @@ ifeq ($(ENV), intel)
   OMP_FLAGS=-qopenmp
 else ifeq ($(ENV), fugaku)
   CC=fccpx
-  CFLAGS=-Kfast -I../include -Nclang
+  CFLAGS=-O3 -I../include -Nclang
   OMP_FLAGS=-Kopenmp
 else
   CC=gcc

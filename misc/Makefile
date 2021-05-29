@@ -1,10 +1,10 @@
-ifeq ($(ENV), intel)
+misc/Makefile ifeq ($(ENV), intel)
   CC=icc
   CFLAGS=-O3 -std=gnu99 -mavx2 -I../include
   OMP_FLAGS=-qopenmp
 else ifeq ($(ENV), fugaku)
   CC=fccpx
-  CFLAGS=-Kfast -I../include -Nclang
+  CFLAGS=-O3 -I../include -Nclang
   OMP_FLAGS=-Kopenmp
 else
   CC=gcc
