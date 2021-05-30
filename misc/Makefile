@@ -1,4 +1,4 @@
-misc/Makefile ifeq ($(ENV), intel)
+ifeq ($(ENV), intel)
   CC=icc
   CFLAGS=-O3 -std=gnu99 -mavx2 -I../include
   OMP_FLAGS=-qopenmp
@@ -15,9 +15,11 @@ endif
 LIBS=../liborp.a -lm
 THREADS_LIBS=../liborp_threads.a -lm
 TMP := $(shell mktemp)
-serial: sa_ref1.x detect_temp.x detect_switches.x sa_ref2.x
-threads: threads_sa_ref1.x threads_detect_temp.x threads_sa_ref2.x
+serial: sa_ref1.x detect_temp.x detect_switches.x sa_ref2.x histgram.x
+threads: threads_sa_ref1.x threads_sa_ref2.x
 all: serial threads
+histgram.x: histgram.c
+	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 sa_ref1.x: sa_ref1.c ../liborp.a ../include/orp.h
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 sa_ref2.x: sa_ref2.c ../liborp.a ../include/orp.h
