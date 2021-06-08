@@ -1,4 +1,4 @@
- #include <stdio.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -231,19 +231,24 @@ int main(int argc, char *argv[])
         j++;
       }
 
+      bool enable_swing = true;
       int u[2], v[2], u_d[2], v_d[2];
       while(1){
         u[0] = get_random(switches);
-        u[1] = get_random(switches);        
+        u[1] = get_random(switches);
         if(u[0] == u[1] || s_degree[u[0]] == 1) continue;
-        
+
         u_d[0] = get_random(s_degree[u[0]]);
         v[0]   = adjacency[u[0]][u_d[0]];
         if(v[0] == u[1]) continue;
-        
+
         u_d[1] = get_random(s_degree[u[1]]);
         v[1]   = adjacency[u[1]][u_d[1]];
-        if(v[1] == u[0] || v[0] == v[1] || h_degree[v[1]] == 0) continue;
+        if(v[1] == u[0] || v[0] == v[1]) continue;
+        else if(h_degree[u[0]] == 0 && h_degree[u[1]] == 0 && h_degree[v[0]] == 0 && h_degree[v[1]] == 0)
+          enable_swing = false;
+	else if(h_degree[v[1]] == 0)     continue;
+        
         break;
       }
       
@@ -251,38 +256,43 @@ int main(int argc, char *argv[])
       v_d[1] = search_index(v[1], u[1], u_d[1], s_degree, radix, adjacency);
 
       // SWING
-      adjacency[v[0]][v_d[0]]           = v[1];
-      adjacency[u[0]][u_d[0]]           = adjacency[u[0]][s_degree[u[0]]-1];
-      adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED;
-      adjacency[v[1]][s_degree[v[1]]]   = v[0];
-      h_degree[u[0]]++; s_degree[u[0]]--; h_degree[v[1]]--; s_degree[v[1]]++;
+      if(enable_swing){
+        adjacency[v[0]][v_d[0]]           = v[1];
+        adjacency[u[0]][u_d[0]]           = adjacency[u[0]][s_degree[u[0]]-1];
+        adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED;
+        adjacency[v[1]][s_degree[v[1]]]   = v[0];
+        h_degree[u[0]]++; s_degree[u[0]]--; h_degree[v[1]]--; s_degree[v[1]]++;
 
-      ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
+        ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
 
-      if(diameter < best_diameter || (diameter == best_diameter && ASPL < best_ASPL)){
-	best_diameter = diameter;
-	best_sum      = sum;
-	best_ASPL     = ASPL;
-	memcpy(best_adjacency, adjacency, sizeof(int) * switches * radix);
-        memcpy(best_h_degree,  h_degree,  sizeof(int) * switches);
-        memcpy(best_s_degree,  s_degree,  sizeof(int) * switches);
-	if(diameter == low_diameter && ASPL == low_ASPL){
-	  printf("Find optimum solution\n");
-	  break;
-	}
+        if(diameter < best_diameter || (diameter == best_diameter && ASPL < best_ASPL)){
+          best_diameter = diameter;
+          best_sum      = sum;
+          best_ASPL     = ASPL;
+          memcpy(best_adjacency, adjacency, sizeof(int) * switches * radix);
+          memcpy(best_h_degree,  h_degree,  sizeof(int) * switches);
+          memcpy(best_s_degree,  s_degree,  sizeof(int) * switches);
+          if(diameter == low_diameter && ASPL == low_ASPL){
+            printf("Find optimum solution\n");
+            break;
+          }
+        }
       }
       
-      if(accept(switches, current_diameter, diameter, current_ASPL, ASPL, temp, ASPL_priority)){
+      if(enable_swing && accept(switches, current_diameter, diameter, current_ASPL, ASPL, temp, ASPL_priority)){
 	current_diameter = diameter;
 	current_ASPL     = ASPL;
       }
       else{
-        // UNDO
-        h_degree[u[0]]--; s_degree[u[0]]++; h_degree[v[1]]++; s_degree[v[1]]--;
-        adjacency[v[0]][v_d[0]]           = u[0];
-        adjacency[u[0]][s_degree[u[0]]-1] = adjacency[u[0]][u_d[0]];
-        adjacency[u[0]][u_d[0]]           = v[0];
-        adjacency[v[1]][s_degree[v[1]]]   = NOT_DEFINED;
+        if(enable_swing){ // UNDO
+          h_degree[u[0]]--; s_degree[u[0]]++; h_degree[v[1]]++; s_degree[v[1]]--;
+          adjacency[v[0]][v_d[0]]           = u[0];
+          adjacency[u[0]][s_degree[u[0]]-1] = adjacency[u[0]][u_d[0]];
+          adjacency[u[0]][u_d[0]]           = v[0];
+          adjacency[v[1]][s_degree[v[1]]]   = NOT_DEFINED;
+          temp *= cooling_rate;
+          i++;
+        }
 
         // SWAP
         adjacency[u[0]][u_d[0]] = u[1];
@@ -290,8 +300,6 @@ int main(int argc, char *argv[])
         adjacency[v[0]][v_d[0]] = v[1];
         adjacency[v[1]][v_d[1]] = v[0];
         ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
-        temp *= cooling_rate;
-        i++;
         
         if(diameter < best_diameter || (diameter == best_diameter && ASPL < best_ASPL)){
           best_diameter = diameter;
@@ -310,8 +318,7 @@ int main(int argc, char *argv[])
           current_diameter = diameter;
           current_ASPL     = ASPL;
         }
-        else{
-          // UNDO
+        else{  // UNDO
           adjacency[u[0]][u_d[0]] = v[0];
           adjacency[u[1]][u_d[1]] = v[1];
           adjacency[v[0]][v_d[0]] = u[0];
