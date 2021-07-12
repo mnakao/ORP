@@ -4,30 +4,36 @@
 
 int main(int argc, char **argv)
 {
-  int hosts, switches, radix, lines, diameter = -1, low_diameter = -1, symmetries = 2;
+  int hosts, switches, radix, lines, diameter = -1, low_diameter = -1;
   long sum = -1;
   double ASPL = -1, low_ASPL = -1;
 
-  if(argc != 2){
-    fprintf(stderr, "Please add an edge file. \"%s xxx.edges\"\n", argv[0]);
+  if(argc != 3){
+    fprintf(stderr, "./%s xxx.edges symmetries\n", argv[0]);
     exit(1);
   }
-    
+
   ORP_Read_property(argv[1], &hosts, &switches, &radix, &lines);
+  int symmetries = atoi(argv[2]);
   int (*edge)[2] = malloc(sizeof(int)*lines*2); // int edge[lines][2];
   ORP_Read_edge(argv[1], edge);
   if(hosts % symmetries != 0){
-    fprintf("hosts(%d) must be divisible by symmetries(%d)\n", hosts, symmetries);
+    fprintf(stderr, "hosts(%d) must be divisible by symmetries(%d)\n", hosts, symmetries);
     exit(1);
   }
   else if(switches % symmetries != 0){
-    fprintf("switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
+    fprintf(stderr, "switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
     exit(1);
   }
   
   int *s_degree = malloc(sizeof(int) * switches/symmetries);
   int *h_degree = malloc(sizeof(int) * switches/symmetries);
-  ORP_Set_degrees_s(hosts, switches, lines, edge, h_degree, s_degree, symmetries);
+  ORP_Set_host_degree_s  (hosts, switches, lines, edge, symmetries, h_degree);
+  ORP_Set_switch_degree_s(hosts, switches, lines, edge, symmetries, s_degree);
+  
+  printf("h s\n");
+  for(int i=0;i<switches/symmetries;i++)
+    printf("%d %d\n", h_degree[i], s_degree[i]);
 
   /*
   int (*adjacency)[radix] = malloc(sizeof(int) * switches * radix); // int adjacency[switches][radix];

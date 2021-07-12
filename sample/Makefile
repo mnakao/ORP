@@ -31,7 +31,7 @@ hc.x: hc.c ../liborp.a ../include/orp.h
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 threads_simple.x: simple.c ../liborp_threads.a ../include/orp.h
 	$(CC) $(CFLAGS) $(OMP_FLAGS) -o $@ $< $(THREADS_LIBS)
-threads_simple.x: simple_s.c ../liborp_threads.a ../include/orp.h
+threads_simple_s.x: simple_s.c ../liborp_threads.a ../include/orp.h
 	$(CC) $(CFLAGS) $(OMP_FLAGS) -o $@ $< $(THREADS_LIBS)
 threads_random.x: random.c ../liborp_threads.a ../include/orp.h
 	$(CC) $(CFLAGS) $(OMP_FLAGS) -o $@ $< $(THREADS_LIBS)

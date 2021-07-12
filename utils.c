@@ -147,7 +147,7 @@ void ORP_Set_degrees(const int hosts, const int switches, const int lines, const
 }
 
 void ORP_Set_degrees_s(const int hosts, const int switches, const int lines, const int (*edge)[2],
-                       int *h_degree, int *s_degree, const int symmetries)
+                       const int symmetries, int h_degree[switches/symmetries], int s_degree[switches/symmetries])
 {
   if(hosts % symmetries != 0)
     ERROR("hosts(%d) must be divisible by symmetries(%d)\n", hosts, symmetries);
@@ -236,10 +236,12 @@ void ORP_Set_host_degree(const int hosts, const int switches, const int lines, c
 }
 
 void ORP_Set_host_degree_s(const int hosts, const int switches, const int lines, const int (*edge)[2],
-                           int *h_degree, const int symmetries)
+                           const int symmetries, int h_degree[switches/symmetries])
 {
   if(hosts % symmetries != 0)
     ERROR("hosts(%d) must be divisible by symmetries(%d)\n", hosts, symmetries);
+  else if(switches % symmetries != 0)
+    ERROR("switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
 
   int based_switches = switches / symmetries;
   for(int i=0;i<based_switches;i++)
@@ -271,9 +273,11 @@ void ORP_Set_switch_degree(const int hosts, const int switches, const int lines,
 
 
 void ORP_Set_switch_degree_s(const int hosts, const int switches, const int lines, const int (*edge)[2],
-                             int s_degree[switches], const int symmetries)
+                             const int symmetries, int s_degree[switches/symmetries])
 {
-  if(switches % symmetries != 0)
+  if(hosts % symmetries != 0)
+    ERROR("hosts(%d) must be divisible by symmetries(%d)\n", hosts, symmetries);
+  else if(switches % symmetries != 0)
      ERROR("switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
 
   int based_switches = switches / symmetries;
