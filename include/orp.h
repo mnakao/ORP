@@ -16,8 +16,11 @@ void ORP_Read_property(char* fname, int* host, int* switches, int* radix, int *l
 void ORP_Restore_adjacency(ORP_Restore r, int radix, int *h_degree, int *s_degree, void *adjacency);
 void ORP_Set_degrees(int hosts, int switches, int lines, void *edge, int h_degree[switches], int s_degree[switches]);
 void ORP_Set_host_degree(int hosts, int switches, int lines, void *edge, int h_degree[switches]);
-void ORP_Set_lbounds(int hosts, int radix, int *low_diameter, double *low_ASPL);
 void ORP_Set_switch_degree(int hosts, int switches, int lines, void *edge, int s_degree[switches]);
+void ORP_Set_degrees_s(int hosts, int switches, int lines, void *edge, int *h_degree, int *s_degree, int symmetries);
+void ORP_Set_host_degree_s(int hosts, int switches, int lines, void *edge, int *h_degree, int symmetries);
+void ORP_Set_switch_degree_s(int hosts, int switches, int lines, void *edge, int *s_degree, int symmetries);
+void ORP_Set_lbounds(int hosts, int radix, int *low_diameter, double *low_ASPL);
 void ORP_Set_aspl(int* h_degree, int* s_degree, void* adjacency, int *diameter, long *sum, double *ASPL);
 void ORP_Srand(unsigned int seed);
 void ORP_Swap_adjacency(int switches, int radix, int *s_degree, ORP_Restore *r, void *adjacency);

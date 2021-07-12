@@ -146,6 +146,36 @@ void ORP_Set_degrees(const int hosts, const int switches, const int lines, const
   }
 }
 
+void ORP_Set_degrees_s(const int hosts, const int switches, const int lines, const int (*edge)[2],
+                       int *h_degree, int *s_degree, const int symmetries)
+{
+  if(hosts % symmetries != 0)
+    ERROR("hosts(%d) must be divisible by symmetries(%d)\n", hosts, symmetries);
+  else if(switches % symmetries != 0)
+    ERROR("switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
+
+  int based_switches = switches / symmetries;
+  for(int i=0;i<based_switches;i++)
+    h_degree[i] = s_degree[i] = 0;
+
+  for(int i=0;i<lines;i++){
+    if(IS_HOST(edge[i][0], hosts)){
+      if(edge[i][1]-hosts < based_switches)
+        h_degree[edge[i][1]-hosts]++;
+    }
+    else if(IS_HOST(edge[i][1], hosts)){
+      if(edge[i][0]-hosts < based_switches)
+        h_degree[edge[i][0]-hosts]++;
+    }
+    else{ // Both vertices are switches
+      if(edge[i][0]-hosts < based_switches)
+        s_degree[edge[i][0]-hosts]++;
+      if(edge[i][1]-hosts < based_switches)
+        s_degree[edge[i][1]-hosts]++;
+      }
+  }
+}
+
 bool ORP_Verify_edge(const int hosts, const int switches, const int radix, const int lines, const int (*edge)[2])
 {
   int local_hosts[hosts];
@@ -205,6 +235,26 @@ void ORP_Set_host_degree(const int hosts, const int switches, const int lines, c
   }
 }
 
+void ORP_Set_host_degree_s(const int hosts, const int switches, const int lines, const int (*edge)[2],
+                           int *h_degree, const int symmetries)
+{
+  if(hosts % symmetries != 0)
+    ERROR("hosts(%d) must be divisible by symmetries(%d)\n", hosts, symmetries);
+
+  int based_switches = switches / symmetries;
+  for(int i=0;i<based_switches;i++)
+    h_degree[i] = 0;
+
+  for(int i=0;i<lines;i++){
+    if(IS_HOST(edge[i][0], hosts))
+      if(edge[i][1]-hosts < based_switches)
+        h_degree[edge[i][1]-hosts]++;
+    else if(IS_HOST(edge[i][1], hosts))
+      if(edge[i][0]-hosts < based_switches)
+        h_degree[edge[i][0]-hosts]++;
+  }
+}
+
 void ORP_Set_switch_degree(const int hosts, const int switches, const int lines, const int (*edge)[2],
                            int s_degree[switches])
 {
@@ -215,6 +265,27 @@ void ORP_Set_switch_degree(const int hosts, const int switches, const int lines,
     if(IS_SWITCH(edge[i][0],hosts) && IS_SWITCH(edge[i][1],hosts)){
       s_degree[edge[i][0]-hosts]++;
       s_degree[edge[i][1]-hosts]++;
+    }
+  }
+}
+
+
+void ORP_Set_switch_degree_s(const int hosts, const int switches, const int lines, const int (*edge)[2],
+                             int s_degree[switches], const int symmetries)
+{
+  if(switches % symmetries != 0)
+     ERROR("switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
+
+  int based_switches = switches / symmetries;
+  for(int i=0;i<based_switches;i++)
+    s_degree[i] = 0;
+
+  for(int i=0;i<lines;i++){
+    if(IS_SWITCH(edge[i][0],hosts) && IS_SWITCH(edge[i][1],hosts)){
+      if(edge[i][0]-hosts < based_switches)
+        s_degree[edge[i][0]-hosts]++;
+      if(edge[i][1]-hosts < based_switches)
+        s_degree[edge[i][1]-hosts]++;
     }
   }
 }
@@ -492,7 +563,22 @@ static void matmul_avx2(const uint64_t *restrict A, uint64_t *restrict B, const 
       }
     }
   }
-  else{ /* NOT IMPLEMENTED */
+  else{
+    int based_switches = switches/symmetries;
+#pragma omp parallel for
+      for(int i=0;i<switches;i++){
+        __m256i *b = (__m256i *)(B + i*elements);
+        int p = i/based_switches;
+        int m = i - p * based_switches;
+        for(int j=0;j<s_degree[i];j++){
+          int n = *(adjacency + m * degree + j) + p * based_switches;
+          if(n >= switches) n -= switches;
+          __m256i *a = (__m256i *)(A + n*elements);
+          for(int k=0;k<quarter_elements;k++){
+            __m256i aa = _mm256_load_si256(a+k);
+            __m256i bb = _mm256_load_si256(b+k);
+            _mm256_store_si256(b+k, _mm256_or_si256(aa, bb));
+          }
   }
 }
 #endif
@@ -511,7 +597,19 @@ static void matmul(const uint64_t *restrict A, uint64_t *restrict B, const int s
       }
     }
   }
-  else{	/* NOT IMPLEMENTED */
+  else{
+    int based_switches = switches/symmetries;
+#pragma omp parallel for
+    for(int i=0;i<switches;i++){
+        int p = i/based_switches;
+        int m = i - p * based_switches;
+        for(int j=0;j<s_degree[i];j++){
+          int n = *(adjacency + m * radix + j) + p * based_switches;
+          if(n >= switches) n -= switches;
+          for(int k=0;k<elements;k++)
+            B[i*elements+k] |= A[n*elements+k];
+        }
+    }
   }
 }
 
@@ -608,14 +706,37 @@ int ORP_top_down_step(const int level, const int num_frontier, const int* restri
       }
     }
   }
-  else{ /* NOT_IMPLEMENTED */
+  else{
+#pragma omp parallel
+    {
+      int local_count = 0, based_switches = switches/symmetries;
+#pragma omp for nowait
+      for(int i=0;i<num_frontier;i++){
+        int v = frontier[i];
+        int p = v/based_switches;
+        int m = v - p * based_switches;
+        for(int j=0;j<s_degree[v];j++){
+          int n = *(adjacency + m * radix + j) + p * based_switches;
+          if(n >= switches) n -= switches;
+          if(distance[n] == NOT_USED){
+            distance[n] = level;
+            _local_frontier[local_count++] = n;
+          }
+        }
+      }  // end for i
+#pragma omp critical
+      {
+        memcpy(&next[count], _local_frontier, local_count*sizeof(int));
+        count += local_count;
+      }
+    }
   }
   return count;
 }
 #else
 int ORP_top_down_step(const int level, const int num_frontier, const int* restrict adjacency,
                       const int switches, const int radix, const int* restrict s_degree, const int symmetries,
-                      int* restrict frontier, int* restrict next, int* restrict distance, char* restrict bitmap)
+                      int* restrict frontier, int* restrict next, int* restrict distance)
 {
   int count = 0;
   if(symmetries == 1){
@@ -630,7 +751,21 @@ int ORP_top_down_step(const int level, const int num_frontier, const int* restri
       }
     }
   }
-  else{	/* NOT IMPLEMENTED */
+  else{
+    int based_switches = switches/symmetries;
+    for(int i=0;i<num_frontier;i++){
+      int v = frontier[i];
+      int p = v/based_switches;
+      int m = v - p * based_switches;
+      for(int j=0;j<s_degree[v];j++){
+        int n = *(adjacency + m * radix + j) + p * based_switches;
+        if(n >= switches) n -= switches;
+        if(distance[n] == NOT_USED){
+          distance[n] = level;
+          next[count++] = n;
+        }
+      }
+    }
   }
   return count;
 }

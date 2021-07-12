@@ -83,7 +83,7 @@ $ make [serial|threads|all]
 
 Following figure and its edge file are examples of a graph (h = 15, s = 4, r = 6), which is referred to ref. [1].
 
-![](misc/img/sample.png)
+![](https://raw.githubusercontent.com/mnakao/ORP-misc/main/img/sample.png)
 
 ```
 15 4 6
@@ -413,6 +413,26 @@ void ORP_Restore_adjacency(ORP_Restore r, int radix, int h_degree[switches], int
 * [OUT] h_degree : Number of hosts connected to each switch.
 * [OUT] s_degree : Number of switches connected to each switch.
 * [OUT] adjacency : Adjacency matrix.
+
+## A graph with symmetry
+Symmetry in this library means that the original graph matches when the graph is rotated `360/symmetries` degrees.
+Therefore, a value of `symmetries` must be a divisor of `hosts` and `switches`.
+When `symmetries=1`, target the graph without symmetry.
+
+![](https://raw.githubusercontent.com/mnakao/ORP-misc/main/img/sample_s.png)
+
+The image is an example of a graph with (hosts, switches, radix, symmetries) = (9, 6, 5, 3).
+The adjacency matrix can be divided into three groups (`= symmetries`).
+The values on the 1st row are 19, 9, and 2.
+It means that the vertex number 0 has three edges, 0-19, 0-9, and 0-2.
+The edges plus 6 (`= nodes/symmetries`) matches the 1st row in the next group (in line 7).
+2 + 6 = 8 and 9 + 6 = 15.
+Here, 19 + 6 = 25, but the number of nodes is 24, so it goes around and becomes 25 - 24 = 1.
+This rule holds for all groups.
+
+The elements in lins 7-24 of the adjacency matrix can be calculated from those in lines 1-6.
+Thus, the new `adjacency matrix'`, in which the red part of `adjacency matrix` is deleted, is used.
+The size of the `adjacency matrix'` is `int adjacency[nodes/symmetries][degree]`.
 
 ## Performance
 * On Cygnus system in University of Tsukuba, Japan

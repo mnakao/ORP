@@ -25,8 +25,9 @@ extern double ORP_Get_time();
 static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree, const int* restrict adjacency,
                      int *diameter, long *sum, double *ASPL)
 {
+  int based_switches = _switches/_symmetries;
 #pragma omp parallel for
-  for(int i=0;i<_switches*_switches;i++)
+  for(int i=0;i<_switches*based_switches;i++)
     _bitmap[i] = NOT_VISITED;
 
 #pragma omp parallel for
@@ -35,7 +36,7 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
   
   long k = 0, stop_k = ((long)_switches*_switches-_switches)/2, local_sum = 0;
 #pragma omp parallel for
-  for(int i=0;i<_switches/_symmetries;i++){
+  for(int i=0;i<based_switches;i++){
     unsigned int offset = i*_elements+i/UINT64_BITS;
     _A[offset] = _B[offset] = (0x1ULL << (i%UINT64_BITS));
   }
@@ -47,12 +48,12 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
 
     level++;
 #pragma omp parallel for reduction(+:k,local_sum)
-    for(int i=0;i<_switches;i++){
+    for(int i=0;i<based_switches;i++){
       for(int j=i+1;j<_switches;j++){
         int ii = i*_switches+j;
         if(_bitmap[ii] == NOT_VISITED && (_B[i*_elements+(j/UINT64_BITS)] & (0x1ULL<<(j%UINT64_BITS)))){
           _bitmap[ii] = VISITED;
-          local_sum += level * h_degree[i] * h_degree[j];
+          local_sum += level * h_degree[i] * h_degree[j] * _symmetries;
           k++;
         }
       }
@@ -69,8 +70,8 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
   }
 
 #pragma omp parallel for reduction(+:local_sum)
-  for(int i=0;i<_switches;i++)
-    local_sum += (long)h_degree[i] * (h_degree[i] - 1);
+  for(int i=0;i<based_switches;i++)
+    local_sum += (long)h_degree[i] * (h_degree[i] - 1) * _symmetries;
 
   *ASPL = local_sum / (double)(((long)_hosts*(_hosts-1))/2);
   *sum  = local_sum;
@@ -79,6 +80,11 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
 
 void ORP_Init_aspl_s(const int hosts, const int switches, const int radix, const int symmetries)
 {
+  if(hosts % symmetries != 0)
+    ERROR("hosts(%d) must be divisible by symmetries(%d)\n", hosts, symmetries);
+  else if(switches % symmetries != 0)
+    ERROR("switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
+    
   _kind     = ORP_Get_kind();
   _elements = (switches/symmetries+(UINT64_BITS-1))/UINT64_BITS;
 #ifdef __AVX2__
@@ -91,7 +97,7 @@ void ORP_Init_aspl_s(const int hosts, const int switches, const int radix, const
   if(_kind == ASPL_MATRIX){
     ORP_Malloc(&_A, switches*_elements*sizeof(uint64_t), _enable_avx2); // uint64_t A[switches][_elements];
     ORP_Malloc(&_B, switches*_elements*sizeof(uint64_t), _enable_avx2); // uint64_t B[switches][_elements];
-    _bitmap = malloc(sizeof(char) * switches * switches);               // char _bitmap[switches][switches];
+    _bitmap = malloc(sizeof(char) * switches/symmetries * switches);    // char _bitmap[switches/symmetries][switches];
   }
   else{ // _kind == ASPL_BFS
     _frontier = malloc(sizeof(int)  * switches);
@@ -119,11 +125,10 @@ void ORP_Init_aspl(const int hosts, const int switches, const int radix)
 static void aspl_bfs(const int* restrict h_degree, const int* restrict s_degree, const int* restrict adjacency,
                      int* diameter, long *sum, double* ASPL)
 {
-  int based_nodes = _switches/_symmetries;
-  bool reached = true;
+  int based_switches = _switches/_symmetries;
   *diameter = 0;
   *sum      = 0;
-  for(int s=0;s<based_nodes;s++){
+  for(int s=0;s<based_switches;s++){
     if(h_degree[s] == 0) continue;
     
     int num_frontier = 1, level = 0;
@@ -146,17 +151,15 @@ static void aspl_bfs(const int* restrict h_degree, const int* restrict s_degree,
     *diameter = MAX(*diameter, level-1);
 
     if(s == 0){
-      for(int i=1;i<_switches;i++)
-        if(_distance[i] == NOT_USED)
-          reached = false;
-      
-      if(!reached){
-        *diameter = INT_MAX;
-        return;
+      for(int i=1;i<_switches;i++){
+        if(_distance[i] == NOT_USED){
+          *diameter = INT_MAX;
+          return;
+        }
       }
     }
 
-    *sum += (long)h_degree[s] * (h_degree[s] - 1);
+    *sum += (long)h_degree[s] * (h_degree[s] - 1) + _symmetries;
     for(int i=s+1;i<_switches;i++)
       *sum += (long)(_distance[i] + 3) * h_degree[i] * h_degree[s] * _symmetries;
   }
