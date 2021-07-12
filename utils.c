@@ -548,84 +548,101 @@ double ORP_Get_time()
 
 #ifdef __AVX2__
 static void matmul_avx2(const uint64_t *restrict A, uint64_t *restrict B, const int switches, const int radix,
-                        const int *restrict s_degree, const int *restrict adjacency, const int elements,
-                        const int symmetries)
+                        const int *restrict s_degree, const int *restrict adjacency, const int elements)
 {
   int quarter_elements = elements/4;
-  if(symmetries == 1){
 #pragma omp parallel for
-    for(int i=0;i<switches;i++){
-      __m256i *b = (__m256i *)(B + i*elements);
-      for(int j=0;j<s_degree[i];j++){
-        int n = *(adjacency + i * radix + j);  // int n = adjacency[i][j];
-        __m256i *a = (__m256i *)(A + n*elements);
-        for(int k=0;k<quarter_elements;k++){
-          __m256i aa = _mm256_load_si256(a+k);
-          __m256i bb = _mm256_load_si256(b+k);
-          _mm256_store_si256(b+k, _mm256_or_si256(aa, bb));
-        }
+  for(int i=0;i<switches;i++){
+    __m256i *b = (__m256i *)(B + i*elements);
+    for(int j=0;j<s_degree[i];j++){
+      int n = *(adjacency + i * radix + j);  // int n = adjacency[i][j];
+      __m256i *a = (__m256i *)(A + n*elements);
+      for(int k=0;k<quarter_elements;k++){
+        __m256i aa = _mm256_load_si256(a+k);
+        __m256i bb = _mm256_load_si256(b+k);
+        _mm256_store_si256(b+k, _mm256_or_si256(aa, bb));
       }
     }
   }
-  else{
-    int based_switches = switches/symmetries;
+}
+
+static void matmul_avx2_s(const uint64_t *restrict A, uint64_t *restrict B, const int switches, const int radix,
+                          const int *restrict s_degree, const int *restrict adjacency, const int elements, const int symmetries)
+{
+  int quarter_elements = elements/4;
+  int based_switches = switches/symmetries;
 #pragma omp parallel for
-      for(int i=0;i<switches;i++){
-        __m256i *b = (__m256i *)(B + i*elements);
-        int p = i/based_switches;
-        int m = i - p * based_switches;
-        for(int j=0;j<s_degree[i];j++){
-          int n = *(adjacency + m * degree + j) + p * based_switches;
-          if(n >= switches) n -= switches;
-          __m256i *a = (__m256i *)(A + n*elements);
-          for(int k=0;k<quarter_elements;k++){
-            __m256i aa = _mm256_load_si256(a+k);
-            __m256i bb = _mm256_load_si256(b+k);
-            _mm256_store_si256(b+k, _mm256_or_si256(aa, bb));
-          }
+  for(int i=0;i<switches;i++){
+    __m256i *b = (__m256i *)(B + i*elements);
+    int p = i/based_switches;
+    int m = i - p * based_switches;
+    for(int j=0;j<s_degree[m];j++){
+      int n = *(adjacency + m * degree + j) + p * based_switches;
+      if(n >= switches) n -= switches;
+      __m256i *a = (__m256i *)(A + n*elements);
+      for(int k=0;k<quarter_elements;k++){
+        __m256i aa = _mm256_load_si256(a+k);
+        __m256i bb = _mm256_load_si256(b+k);
+        _mm256_store_si256(b+k, _mm256_or_si256(aa, bb));
+      }
+    }
   }
 }
 #endif
 
 static void matmul(const uint64_t *restrict A, uint64_t *restrict B, const int switches, const int radix,
-                   const int *restrict s_degree, const int *restrict adjacency, const int elements,
-                   const int symmetries)
+                   const int *restrict s_degree, const int *restrict adjacency, const int elements)
 {
-  if(symmetries == 1){
 #pragma omp parallel for
-    for(int i=0;i<switches;i++){
-      for(int j=0;j<s_degree[i];j++){
-        int n = *(adjacency + i * radix + j);  // int n = adjacency[i][j];
-        for(int k=0;k<elements;k++)
-          B[i*elements+k] |= A[n*elements+k];
-      }
-    }
-  }
-  else{
-    int based_switches = switches/symmetries;
-#pragma omp parallel for
-    for(int i=0;i<switches;i++){
-        int p = i/based_switches;
-        int m = i - p * based_switches;
-        for(int j=0;j<s_degree[i];j++){
-          int n = *(adjacency + m * radix + j) + p * based_switches;
-          if(n >= switches) n -= switches;
-          for(int k=0;k<elements;k++)
-            B[i*elements+k] |= A[n*elements+k];
-        }
+  for(int i=0;i<switches;i++){
+    for(int j=0;j<s_degree[i];j++){
+      int n = *(adjacency + i * radix + j);  // int n = adjacency[i][j];
+      for(int k=0;k<elements;k++)
+        B[i*elements+k] |= A[n*elements+k];
     }
   }
 }
 
+static void matmul_s(const uint64_t *restrict A, uint64_t *restrict B, const int switches, const int radix,
+                   const int *restrict s_degree, const int *restrict adjacency, const int elements,
+                   const int symmetries)
+{
+  int based_switches = switches/symmetries;
+#pragma omp parallel for
+  for(int i=0;i<switches;i++){
+    int p = i/based_switches;
+    int m = i - p * based_switches;
+    for(int j=0;j<s_degree[m];j++){
+      int n = *(adjacency + m * radix + j) + p * based_switches;
+      if(n >= switches) n -= switches;
+      for(int k=0;k<elements;k++)
+        B[i*elements+k] |= A[n*elements+k];
+    }
+  }
+}
+
+
 void ORP_Matmul(const uint64_t *restrict A, uint64_t *restrict B, const int switches, const int radix,
                 const int *restrict s_degree, const int *restrict adjacency, const int elements,
-                const int symmetries, const bool enable_avx2)
+                const bool enable_avx2)
 {
 #ifdef __AVX2__
-  if(enable_avx2) matmul_avx2(A, B, switches, radix, s_degree, adjacency, elements, symmetries);
-  else            matmul     (A, B, switches, radix, s_degree, adjacency, elements, symmetries);
+  if(enable_avx2) matmul_avx2(A, B, switches, radix, s_degree, adjacency, elements);
+  else            matmul     (A, B, switches, radix, s_degree, adjacency, elements);
 #else
-  matmul(A, B, switches, radix, s_degree, adjacency, elements, symmetries);
+  matmul(A, B, switches, radix, s_degree, adjacency, elements);
+#endif
+}
+
+void ORP_Matmul_s(const uint64_t *restrict A, uint64_t *restrict B, const int switches, const int radix,
+                  const int *restrict s_degree, const int *restrict adjacency, const int elements,
+                  const bool enable_avx2, const int symmetries)
+{
+#ifdef __AVX2__
+  if(enable_avx2) matmul_avx2_s(A, B, switches, radix, s_degree, adjacency, elements, symmetries);
+  else            matmu_sl     (A, B, switches, radix, s_degree, adjacency, elements, symmetries);
+#else
+  matmul_s(A, B, switches, radix, s_degree, adjacency, elements, symmetries);
 #endif
 }
 
@@ -684,90 +701,97 @@ static bool simple_bfs(const int switches, const int radix, int* s_degree, int (
 
 #ifdef _OPENMP
 int ORP_top_down_step(const int level, const int num_frontier, const int* restrict adjacency, 
-                      const int switches, const int radix, const int* restrict s_degree, const int symmetries,
+                      const int switches, const int radix, const int* restrict s_degree,
                       int* restrict frontier, int* restrict next, int* restrict distance)
 {
   int count = 0;
-  if(symmetries == 1){
 #pragma omp parallel
-    {
-      int local_count = 0;
+  {
+    int local_count = 0;
 #pragma omp for nowait
-      for(int i=0;i<num_frontier;i++){
-        int v = frontier[i];
-        for(int j=0;j<s_degree[v];j++){
-          int n = *(adjacency + v * radix + j);
-          if(distance[n] == NOT_USED){
-            distance[n] = level;
-            _local_frontier[local_count++] = n;
-          }
-      	}
-      }  // end for i
-#pragma omp critical
-      {
-      	memcpy(&next[count], _local_frontier, local_count*sizeof(int));
-        count += local_count;
-      }
-    }
-  }
-  else{
-#pragma omp parallel
-    {
-      int local_count = 0, based_switches = switches/symmetries;
-#pragma omp for nowait
-      for(int i=0;i<num_frontier;i++){
-        int v = frontier[i];
-        int p = v/based_switches;
-        int m = v - p * based_switches;
-        for(int j=0;j<s_degree[v];j++){
-          int n = *(adjacency + m * radix + j) + p * based_switches;
-          if(n >= switches) n -= switches;
-          if(distance[n] == NOT_USED){
-            distance[n] = level;
-            _local_frontier[local_count++] = n;
-          }
-        }
-      }  // end for i
-#pragma omp critical
-      {
-        memcpy(&next[count], _local_frontier, local_count*sizeof(int));
-        count += local_count;
-      }
-    }
-  }
-  return count;
-}
-#else
-int ORP_top_down_step(const int level, const int num_frontier, const int* restrict adjacency,
-                      const int switches, const int radix, const int* restrict s_degree, const int symmetries,
-                      int* restrict frontier, int* restrict next, int* restrict distance)
-{
-  int count = 0;
-  if(symmetries == 1){
     for(int i=0;i<num_frontier;i++){
       int v = frontier[i];
       for(int j=0;j<s_degree[v];j++){
         int n = *(adjacency + v * radix + j);
         if(distance[n] == NOT_USED){
           distance[n] = level;
-          next[count++] = n;
-	}
+          _local_frontier[local_count++] = n;
+        }
       }
+    }  // end for i
+#pragma omp critical
+    {
+      memcpy(&next[count], _local_frontier, local_count*sizeof(int));
+      count += local_count;
     }
   }
-  else{
-    int based_switches = switches/symmetries;
+  return count;
+}
+
+int ORP_top_down_step_s(const int level, const int num_frontier, const int* restrict adjacency,
+                        const int switches, const int radix, const int* restrict s_degree,
+                        int* restrict frontier, int* restrict next, int* restrict distance, const int symmetries)
+{
+  int count = 0;
+#pragma omp parallel
+  {
+    int local_count = 0, based_switches = switches/symmetries;
+#pragma omp for nowait
     for(int i=0;i<num_frontier;i++){
       int v = frontier[i];
       int p = v/based_switches;
       int m = v - p * based_switches;
-      for(int j=0;j<s_degree[v];j++){
+      for(int j=0;j<s_degree[m];j++){
         int n = *(adjacency + m * radix + j) + p * based_switches;
         if(n >= switches) n -= switches;
         if(distance[n] == NOT_USED){
           distance[n] = level;
-          next[count++] = n;
+          _local_frontier[local_count++] = n;
         }
+      }
+    }  // end for i
+#pragma omp critical
+    {
+      memcpy(&next[count], _local_frontier, local_count*sizeof(int));
+      count += local_count;
+    }
+  }
+  return count;
+}
+#else
+int ORP_top_down_step(const int level, const int num_frontier, const int* restrict adjacency,
+                      const int switches, const int radix, const int* restrict s_degree,
+                      int* restrict frontier, int* restrict next, int* restrict distance)
+{
+  int count = 0;
+  for(int i=0;i<num_frontier;i++){
+    int v = frontier[i];
+    for(int j=0;j<s_degree[v];j++){
+      int n = *(adjacency + v * radix + j);
+      if(distance[n] == NOT_USED){
+        distance[n] = level;
+        next[count++] = n;
+      }
+    }
+  }
+  return count;
+}
+
+int ORP_top_down_step_s(const int level, const int num_frontier, const int* restrict adjacency,
+                        const int switches, const int radix, const int* restrict s_degree, 
+                        int* restrict frontier, int* restrict next, int* restrict distance, const int symmetries)
+{
+  int count = 0, based_switches = switches/symmetries;
+  for(int i=0;i<num_frontier;i++){
+    int v = frontier[i];
+    int p = v/based_switches;
+    int m = v - p * based_switches;
+    for(int j=0;j<s_degree[m];j++){
+      int n = *(adjacency + m * radix + j) + p * based_switches;
+      if(n >= switches) n -= switches;
+      if(distance[n] == NOT_USED){
+        distance[n] = level;
+        next[count++] = n;
       }
     }
   }

@@ -25,18 +25,15 @@ int main(int argc, char **argv)
     fprintf(stderr, "switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
     exit(1);
   }
-  
-  int *s_degree = malloc(sizeof(int) * switches/symmetries);
-  int *h_degree = malloc(sizeof(int) * switches/symmetries);
+
+  int based_switches = switches / symmetries;
+  int *s_degree = malloc(sizeof(int) * based_switches);
+  int *h_degree = malloc(sizeof(int) * based_switches);
   ORP_Set_host_degree_s  (hosts, switches, lines, edge, symmetries, h_degree);
   ORP_Set_switch_degree_s(hosts, switches, lines, edge, symmetries, s_degree);
   
-  printf("h s\n");
-  for(int i=0;i<switches/symmetries;i++)
-    printf("%d %d\n", h_degree[i], s_degree[i]);
-
+  int (*adjacency)[radix] = malloc(sizeof(int) * based_switches * radix); // int adjacency[based_switches][radix];
   /*
-  int (*adjacency)[radix] = malloc(sizeof(int) * switches * radix); // int adjacency[switches][radix];
   ORP_Conv_edge2adjacency(hosts, switches, radix, lines, edge, adjacency);
 
   ORP_Init_aspl(hosts, switches, radix);
