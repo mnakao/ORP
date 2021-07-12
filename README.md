@@ -433,6 +433,101 @@ This rule holds for all groups.
 The elements in lins 3-6 of the adjacency matrix can be calculated from those in lines 1-2.
 Thus, the new `adjacency matrix'`, in which the red part of `adjacency matrix` is deleted, is used.
 The size of the `adjacency matrix'` is `int adjacency[switches/symmetries][radix]`.
+Similarly, the sizes of h_degree and s_degree are `int h_degree[switches/symmetries]` and `int s_degree[switches/symmetries]`.
+
+### Initialize
+```
+void ODP_Init_aspl_general_s(int hosts, int switches, int radix, int symmetries)
+```
+* [IN] hosts : Number of hosts.
+* [IN] switches: Number of switches.
+* [IN] radix : Radix of the switch.
+* [IN] symmetries : Numer of symmetries in a graph.
+
+Note that the ORP_Set_aspl() and ORP_Finalize_aspl() can be used in common.
+
+### Convert an edge list to an adjacency matrix
+```
+void ORP_Conv_edge2adjacency_s(int hosts, int switches, int radix, int lines, int edge[lines][2], int symmetries, int adjacency[switches/symmetries][radix])
+```
+* [IN] hosts : Number of hosts.
+* [IN] switches : Number of switches.
+* [IN] radix : Radix of the switch.
+* [IN] lines : Number of lines in an edge list.
+* [IN] edge : Edge list.
+* [IN] symmetries : Numer of symmetries in a graph. This value must be a divisor of hosts and switches.
+* [OUT] adjacency : Adjacency matrix.
+
+### Convert an adjacency matrix to an edge list
+```
+void ORP_Conv_adjacency2edge(int hosts, int switches, int radix, int h_degree[switches/symmetries], int s_degree[switches/symmetries], int adjacency[switches/symmetries][radix], int symmetries, int edge[lines][2])
+```
+* [IN] hosts : Number of hosts.
+* [IN] switches : Number of switches.
+* [IN] radix : Radix of the switch.
+* [IN] h_degree : Number of hosts connected to each switch.
+* [IN] s_degree : Number of switches connected to each switch.
+* [IN] adjacency : Adjacency matrix.
+* [IN] symmetries : Numer of symmetries in a graph. This value must be a divisor of hosts and switches.
+* [OUT] edge : Edge list.
+
+### Set degrees for a graph
+ORP_Set_host_degree_s() and ORP_Set_switch_degree_s() set h_degree and s_degree, respectively.
+ORP_Set_degrees_s() sets both h_degree and s_degree.
+```
+void ORP_Set_host_degree_s  (int hosts, int switches, int lines, int edge[lines][2], int symmetries, int h_degree[switches/symmetries])
+void ORP_Set_switch_degree_s(int hosts, int switches, int lines, int edge[lines][2], int symmetries, int s_degree[switches/symmetries])
+void ORP_Set_degrees_s      (int hosts, int switches, int lines, int edge[lines][2], int symmetries, int h_degree[switches/symmetries], int s_degree[switches/symmetries])
+```
+* [IN] hosts : Number of hosts.
+* [IN] switches : Number of switches.
+* [IN] lines : Number of lines in an edge list.
+* [IN] edge : Edge list.
+* [IN] symmetries : Numer of symmetries in a graph. This value must be a divisor of hosts and switches.
+* [OUT] h_degree : Number of hosts connected to each switch.
+* [OUT] s_degree : Number of switches connected to each switch.
+
+### Generate a random graph
+Generate a graph with randomly connected vertices. Note that the graph may contain multiple edges and loops.
+When assign_evenly=true, it assigns evenly hosts to switches.
+```
+void* ORP_Generate_random_s(int hosts, int switches, int radix, bool assign_evenly, int symmetries, int *lines, int *h_degree, int *s_degree)
+```
+* [IN] hosts : Number of hosts.
+* [IN] switches : Number of switches.
+* [IN] radix : Radix of the switch.
+* [IN] assign_evenly : Whether to assign evenly hosts to switches.
+* [IN] symmetries : Numer of symmetries in a graph. This value must be a divisor of hosts and switches.
+* [OUT] lines : Number of lines in an edge list.
+* [OUT] h_degree : Number of hosts connected to each switch.
+* [OUT] s_degree : Number of switches connected to each switch.
+* [RETURN] Edge list.
+
+### Mutate an adjacency matrix
+Mutate an adjacency matrix slightly with symmetry.
+The changes are stored in the ORP_Resotre structure variable.
+```
+void ORP_Swap_adjacency_s(int switches, int radix, int s_degree[switches/symmetries], int symmetries, ORP_Restore *restore, int adjacency[switches/symmetries][radix])
+```
+* [IN] switches : Number of switches.
+* [IN] radix : Radix of the switch.
+* [IN] s_degree : Number of switches connected to each switch.
+* [IN] symmetries : Numer of symmetries in a graph. This value must be a divisor of hosts and switches.
+* [OUT] restore : Changes.
+* [OUT] adjacency : Adjacency matrix.
+
+```
+void ORP_Swing_adjacency_s(int switches, int radix, int symmetries, int h_degree[switches/symmetries], int s_degree[switches/symmetries], ORP_Restore *restore, int adjacency[switches/symmetries][radix])
+```
+* [IN] switches : Number of switches.
+* [IN] radix : Radix of the switch.
+* [IN] symmetries : Numer of symmetries in a graph. This value must be a divisor of hosts and switches.
+* [OUT] h_degree : Number of hosts connected to each switch.
+* [OUT] s_degree : Number of switches connected to each switch.
+* [OUT] restore : Changes.
+* [OUT] adjacency : Adjacency matrix.
+
+Note that the ORP_Restore_adjacency() can be used in common.
 
 ## Performance
 * On Cygnus system in University of Tsukuba, Japan
