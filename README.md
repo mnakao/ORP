@@ -422,17 +422,17 @@ When `symmetries=1`, target the graph without symmetry.
 ![](https://raw.githubusercontent.com/mnakao/ORP-misc/main/img/sample_s.png)
 
 The image is an example of a graph with (hosts, switches, radix, symmetries) = (9, 6, 5, 3).
-The adjacency matrix can be divided into three groups (`= symmetries`).
-The values on the 1st row are 19, 9, and 2.
-It means that the vertex number 0 has three edges, 0-19, 0-9, and 0-2.
-The edges plus 6 (`= nodes/symmetries`) matches the 1st row in the next group (in line 7).
-2 + 6 = 8 and 9 + 6 = 15.
-Here, 19 + 6 = 25, but the number of nodes is 24, so it goes around and becomes 25 - 24 = 1.
+The adjacency matrix of switch can be divided into three groups (`= symmetries`).
+The values on the 2nd row are 0, 3, and 5.
+It means that the switch S1 has three edges, S1-S0, S1-S3, and S1-S5.
+The edges plus 2 (`= switches/symmetries`) matches the 2nd row in the next group (in line 4).
+0 + 2 = 2 and 3 + 2 = 5.
+Here, 5 + 2 = 7, but the number of switches is 6, so it goes around and becomes 7 - 6 = 1.
 This rule holds for all groups.
 
-The elements in lins 7-24 of the adjacency matrix can be calculated from those in lines 1-6.
+The elements in lins 3-6 of the adjacency matrix can be calculated from those in lines 1-2.
 Thus, the new `adjacency matrix'`, in which the red part of `adjacency matrix` is deleted, is used.
-The size of the `adjacency matrix'` is `int adjacency[nodes/symmetries][degree]`.
+The size of the `adjacency matrix'` is `int adjacency[switches/symmetries][radix]`.
 
 ## Performance
 * On Cygnus system in University of Tsukuba, Japan
