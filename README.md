@@ -437,7 +437,7 @@ Similarly, the sizes of h_degree and s_degree are `int h_degree[switches/symmetr
 
 ### Initialize
 ```
-void ODP_Init_aspl_general_s(int hosts, int switches, int radix, int symmetries)
+void ORP_Init_aspl_s(int hosts, int switches, int radix, int symmetries)
 ```
 * [IN] hosts : Number of hosts.
 * [IN] switches: Number of switches.
