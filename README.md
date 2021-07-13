@@ -460,7 +460,7 @@ void ORP_Conv_edge2adjacency_s(int hosts, int switches, int radix, int lines, in
 
 ### Convert an adjacency matrix to an edge list
 ```
-void ORP_Conv_adjacency2edge(int hosts, int switches, int radix, int h_degree[switches/symmetries], int s_degree[switches/symmetries], int adjacency[switches/symmetries][radix], int symmetries, int edge[lines][2])
+void ORP_Conv_adjacency2edge_s(int hosts, int switches, int radix, int h_degree[switches/symmetries], int s_degree[switches/symmetries], int adjacency[switches/symmetries][radix], int symmetries, int edge[lines][2])
 ```
 * [IN] hosts : Number of hosts.
 * [IN] switches : Number of switches.

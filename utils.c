@@ -20,6 +20,14 @@ void ORP_free_local_frontier()
 }
 #endif
 
+void CHECK_HOSTS_SWITCHS_S(const int hosts, const int switches, const int symmetries)
+{
+  if(hosts % symmetries != 0)
+    ERROR("hosts(%d) must be divisible by symmetries(%d)\n", hosts, symmetries);
+  else if(switches % symmetries != 0)
+    ERROR("switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
+}
+
 void ORP_Malloc(uint64_t **a, const size_t s, const bool enable_avx2)
 {
 #if defined(__ARM_NEON) || defined(__FUJITSU)
@@ -149,10 +157,7 @@ void ORP_Set_degrees(const int hosts, const int switches, const int lines, const
 void ORP_Set_degrees_s(const int hosts, const int switches, const int lines, const int (*edge)[2],
                        const int symmetries, int h_degree[switches/symmetries], int s_degree[switches/symmetries])
 {
-  if(hosts % symmetries != 0)
-    ERROR("hosts(%d) must be divisible by symmetries(%d)\n", hosts, symmetries);
-  else if(switches % symmetries != 0)
-    ERROR("switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
+  CHECK_HOSTS_SWITCHS_S(hosts, switches, symmetries);
 
   int based_switches = switches / symmetries;
   for(int i=0;i<based_switches;i++)
@@ -238,10 +243,7 @@ void ORP_Set_host_degree(const int hosts, const int switches, const int lines, c
 void ORP_Set_host_degree_s(const int hosts, const int switches, const int lines, const int (*edge)[2],
                            const int symmetries, int h_degree[switches/symmetries])
 {
-  if(hosts % symmetries != 0)
-    ERROR("hosts(%d) must be divisible by symmetries(%d)\n", hosts, symmetries);
-  else if(switches % symmetries != 0)
-    ERROR("switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
+  CHECK_HOSTS_SWITCHS_S(hosts, switches, symmetries);
 
   int based_switches = switches / symmetries;
   for(int i=0;i<based_switches;i++)
@@ -275,10 +277,7 @@ void ORP_Set_switch_degree(const int hosts, const int switches, const int lines,
 void ORP_Set_switch_degree_s(const int hosts, const int switches, const int lines, const int (*edge)[2],
                              const int symmetries, int s_degree[switches/symmetries])
 {
-  if(hosts % symmetries != 0)
-    ERROR("hosts(%d) must be divisible by symmetries(%d)\n", hosts, symmetries);
-  else if(switches % symmetries != 0)
-     ERROR("switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
+  CHECK_HOSTS_SWITCHS_S(hosts, switches, symmetries);
 
   int based_switches = switches / symmetries;
   for(int i=0;i<based_switches;i++)
@@ -373,6 +372,34 @@ void ORP_Conv_edge2adjacency(const int hosts, const int switches, const int radi
   }
 }
 
+void ORP_Conv_edge2adjacency_s(const int hosts, const int switches, const int radix,
+                               const int lines, const int (*edge)[2], const int symmetries, int (*adjacency)[radix])
+{
+  CHECK_HOSTS_SWITCHS_S(hosts, switches, symmetries);
+  
+  int based_switches = switches / symmetries;
+  int s_degree[based_switches];
+  for(int i=0;i<based_switches;i++)
+    s_degree[i] = 0;
+
+  for(int i=0;i<based_switches;i++)
+    for(int j=0;j<radix;j++)
+      adjacency[i][j] = NOT_DEFINED;
+
+  for(int i=0;i<lines;i++){
+    int n1 = edge[i][0];
+    int n2 = edge[i][1];
+    if(IS_SWITCH(n1,hosts) && IS_SWITCH(n2,hosts)){
+      int s1 = n1 - hosts;
+      int s2 = n2 - hosts;
+      if(s1 < based_switches)
+        adjacency[s1][s_degree[s1]++] = s2;
+      if(s2 < based_switches)
+        adjacency[s2][s_degree[s2]++] = s1;
+    }
+  }
+}
+
 void ORP_Conv_adjacency2edge(const int hosts, const int switches, const int radix, const int *h_degree,
                              const int *s_degree, const int (*adjacency)[radix], int (*edge)[2])
 {
@@ -405,6 +432,37 @@ void ORP_Conv_adjacency2edge(const int hosts, const int switches, const int radi
     }
     if(loop_count%2 == 1) ERROR("Something Wrong. (id=3)\n");
   }
+}
+
+void ORP_Conv_adjacency2edge_s(const int hosts, const int switches, const int radix, const int *h_degree,
+                               const int *s_degree, const int (*adjacency)[radix], const int symmetries, int (*edge)[2])
+{
+  CHECK_HOSTS_SWITCHS_S(hosts, switches, symmetries);
+
+  int (*tmp_adjacency)[radix] = malloc(sizeof(int) * switches * radix);
+  int based_switches = switches / symmetries;
+  for(int i=0;i<symmetries;i++){
+    for(int j=0;j<based_switches;j++){
+      for(int k=0;k<s_degree[j];k++){
+        int n = adjacency[j][k] + i * based_switches;
+        tmp_adjacency[i*based_switches+j][k] = (n < switches)? n : n - switches;
+      }
+    }
+  }
+
+  int *tmp_h_degree = malloc(sizeof(int) * switches);
+  int *tmp_s_degree = malloc(sizeof(int) * switches);
+  for(int i=0;i<symmetries;i++){
+    for(int j=0;j<based_switches;j++){
+      tmp_h_degree[i*based_switches+j] = h_degree[j];
+      tmp_s_degree[i*based_switches+j] = s_degree[j];
+    }
+  }
+  
+  ORP_Conv_adjacency2edge(hosts, switches, radix, tmp_h_degree, tmp_s_degree, tmp_adjacency, edge);
+  free(tmp_adjacency);
+  free(tmp_h_degree);
+  free(tmp_s_degree);
 }
 
 void ORP_Print_adjacency(const int hosts, const int switches, const int radix, const int s_degree[switches],
