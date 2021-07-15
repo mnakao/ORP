@@ -57,8 +57,6 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
   long level = 2;
   for(int kk=0;kk<_switches;kk++){
     ORP_Matmul(_A, _B, _switches, _radix, s_degree, adjacency, _elements, _enable_avx2);
-    for(int i=0;i<_switches;i++)
-      printb(_B[i]);
 
     level++;
 #pragma omp parallel for reduction(+:k,local_sum)
@@ -68,13 +66,10 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
         if(_bitmap[ii] == NOT_VISITED && (_B[i*_elements+(j/UINT64_BITS)] & (0x1ULL<<(j%UINT64_BITS)))){
           _bitmap[ii] = VISITED;
           local_sum += level * h_degree[i] * h_degree[j];
-          printf("%d\n", local_sum);
           k++;
         }
       }
     }
-
-    printf("%d %d\n", k, stop_k);
     if(k == stop_k) break;
 
     // swap A <-> B
@@ -84,7 +79,7 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
 
     (*diameter) += 1;
   }
-  printf(":%d\n", local_sum);
+
 #pragma omp parallel for reduction(+:local_sum)
   for(int i=0;i<_switches;i++)
     local_sum += (long)h_degree[i] * (h_degree[i] - 1);
@@ -117,8 +112,6 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
   long level = 2;
   for(int kk=0;kk<_switches;kk++){
     ORP_Matmul_s(_A, _B, _switches, _radix, s_degree, adjacency, _elements, _enable_avx2, _symmetries);
-    for(int i=0;i<_switches;i++)
-      printb(_B[i]);
 
     level++;
 #pragma omp parallel for reduction(+:k,local_sum)
@@ -129,13 +122,10 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
         if(_bitmap[ii] == NOT_VISITED && (_B[i*_elements+(j/UINT64_BITS)] & (0x1ULL<<(j%UINT64_BITS)))){
           _bitmap[ii] = VISITED;
           local_sum += level * h_degree[i%based_switches] * h_degree[j];
-          printf("%d\n", local_sum);
           k++;
         }
       }
     }
-
-    printf("%d %d\n", k, stop_k);
     if(k == stop_k) break;
 
     // swap A <-> B
@@ -147,7 +137,6 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
   }
   
   local_sum = local_sum * _symmetries / 2;
-  printf(":%d\n", local_sum);
 #pragma omp parallel for reduction(+:local_sum)
   for(int i=0;i<based_switches;i++)
     local_sum += (long)h_degree[i] * (h_degree[i] - 1) * _symmetries;
@@ -241,7 +230,6 @@ static void aspl_bfs(const int* restrict h_degree, const int* restrict s_degree,
     for(int i=s+1;i<_switches;i++)
       *sum += (long)(_distance[i] + 3) * h_degree[i] * h_degree[s];
   }
-
   *ASPL = *sum / (double)(((long)_hosts*(_hosts-1))/2);
   *diameter += 2;
 }
@@ -283,12 +271,16 @@ static void aspl_bfs_s(const int* restrict h_degree, const int* restrict s_degre
       }
     }
 
-    *sum += (long)h_degree[s] * (h_degree[s] - 1) * _symmetries;
-    for(int ii=0;ii<_symmetries;ii++)
-      for(int i=s+1;i<_switches-ii*based_switches;i++)
-        *sum += (long)(_distance[i] + 3) * h_degree[i%based_switches] * h_degree[s];
+    for(int i=0;i<_switches;i++){
+      if(i==s) continue;
+      *sum += (long)(_distance[i] + 3) * h_degree[i%based_switches] * h_degree[s];
+    }
   }
-
+  
+  *sum = *sum * _symmetries / 2;
+  for(int s=0;s<based_switches;s++)
+    *sum += (long)h_degree[s] * (h_degree[s] - 1) * _symmetries;
+  
   *ASPL = *sum / (double)(((long)_hosts*(_hosts-1))/2);
   *diameter += 2;
 }
