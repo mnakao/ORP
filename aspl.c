@@ -6,6 +6,13 @@ static int *_frontier = NULL, *_distance = NULL, *_next = NULL;
 static uint64_t *_A, *_B;
 static double _elapsed_time;
 
+void printb(unsigned int v) {
+  unsigned int mask = (int)1 << (sizeof(v) * CHAR_BIT - 1);
+  do putchar(mask & v ? '1' : '0');
+  while (mask >>= 1);
+  printf("\n");
+}
+
 void ORP_Profile(const char* name, const int kind, const int nodes, const int symmetries,
                  const double elapsed_time, const unsigned int times);
 void ORP_Matmul(const uint64_t *restrict A, uint64_t *restrict B, const int switches, const int radix,
@@ -50,6 +57,8 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
   long level = 2;
   for(int kk=0;kk<_switches;kk++){
     ORP_Matmul(_A, _B, _switches, _radix, s_degree, adjacency, _elements, _enable_avx2);
+    for(int i=0;i<_switches;i++)
+      printb(_B[i]);
 
     level++;
 #pragma omp parallel for reduction(+:k,local_sum)
@@ -59,11 +68,13 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
         if(_bitmap[ii] == NOT_VISITED && (_B[i*_elements+(j/UINT64_BITS)] & (0x1ULL<<(j%UINT64_BITS)))){
           _bitmap[ii] = VISITED;
           local_sum += level * h_degree[i] * h_degree[j];
+          printf("%d\n", local_sum);
           k++;
         }
       }
     }
 
+    printf("%d %d\n", k, stop_k);
     if(k == stop_k) break;
 
     // swap A <-> B
@@ -73,7 +84,7 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
 
     (*diameter) += 1;
   }
-
+  printf(":%d\n", local_sum);
 #pragma omp parallel for reduction(+:local_sum)
   for(int i=0;i<_switches;i++)
     local_sum += (long)h_degree[i] * (h_degree[i] - 1);
@@ -95,7 +106,7 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
   for(int i=0;i<_switches*_elements;i++)
     _A[i] = _B[i] = 0;
 
-  long k = 0, stop_k = ((long)_switches*_switches-_switches)/2, local_sum = 0;
+  long k = 0, stop_k = (long)_switches*based_switches-based_switches, local_sum = 0;
 #pragma omp parallel for
   for(int i=0;i<based_switches;i++){
     unsigned int offset = i*_elements+i/UINT64_BITS;
@@ -106,20 +117,25 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
   long level = 2;
   for(int kk=0;kk<_switches;kk++){
     ORP_Matmul_s(_A, _B, _switches, _radix, s_degree, adjacency, _elements, _enable_avx2, _symmetries);
+    for(int i=0;i<_switches;i++)
+      printb(_B[i]);
 
     level++;
 #pragma omp parallel for reduction(+:k,local_sum)
-    for(int i=0;i<based_switches;i++){
-      for(int j=i+1;j<_switches;j++){
-        int ii = i*_switches+j;
+    for(int i=0;i<_switches;i++){
+      for(int j=0;j<based_switches;j++){
+        if(i == j) continue;
+        int ii = i*based_switches+j;
         if(_bitmap[ii] == NOT_VISITED && (_B[i*_elements+(j/UINT64_BITS)] & (0x1ULL<<(j%UINT64_BITS)))){
           _bitmap[ii] = VISITED;
-          local_sum += level * h_degree[i] * h_degree[j%based_switches] * _symmetries;
+          local_sum += level * h_degree[i%based_switches] * h_degree[j];
+          printf("%d\n", local_sum);
           k++;
         }
       }
     }
 
+    printf("%d %d\n", k, stop_k);
     if(k == stop_k) break;
 
     // swap A <-> B
@@ -129,7 +145,9 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
 
     (*diameter) += 1;
   }
-
+  
+  local_sum = local_sum * _symmetries / 2;
+  printf(":%d\n", local_sum);
 #pragma omp parallel for reduction(+:local_sum)
   for(int i=0;i<based_switches;i++)
     local_sum += (long)h_degree[i] * (h_degree[i] - 1) * _symmetries;
@@ -158,7 +176,7 @@ void ORP_Init_aspl_s(const int hosts, const int switches, const int radix, const
   if(_kind == ASPL_MATRIX){
     ORP_Malloc(&_A, switches*_elements*sizeof(uint64_t), _enable_avx2); // uint64_t A[switches][_elements];
     ORP_Malloc(&_B, switches*_elements*sizeof(uint64_t), _enable_avx2); // uint64_t B[switches][_elements];
-    _bitmap = malloc(sizeof(char) * switches/symmetries * switches);    // char _bitmap[switches/symmetries][switches];
+    _bitmap = malloc(sizeof(char) * switches * switches/symmetries);    // char _bitmap[switches][switches/symmetries];
   }
   else{ // _kind == ASPL_BFS
     _frontier = malloc(sizeof(int)  * switches);
@@ -266,8 +284,9 @@ static void aspl_bfs_s(const int* restrict h_degree, const int* restrict s_degre
     }
 
     *sum += (long)h_degree[s] * (h_degree[s] - 1) * _symmetries;
-    for(int i=s+1;i<_switches;i++)
-      *sum += (long)(_distance[i] + 3) * h_degree[i%based_switches] * h_degree[s] * _symmetries;
+    for(int ii=0;ii<_symmetries;ii++)
+      for(int i=s+1;i<_switches-ii*based_switches;i++)
+        *sum += (long)(_distance[i] + 3) * h_degree[i%based_switches] * h_degree[s];
   }
 
   *ASPL = *sum / (double)(((long)_hosts*(_hosts-1))/2);
@@ -304,11 +323,18 @@ void ORP_Set_aspl(const int* restrict h_degree, const int* restrict s_degree, co
 {
   double t = ORP_Get_time();
 
-  if(_kind == ASPL_MATRIX)
-    aspl_mat(h_degree, s_degree, adjacency, diameter, sum, ASPL);
-  else // _kind == ASPL_MATRIX_BFS
-    aspl_bfs(h_degree, s_degree, adjacency, diameter, sum, ASPL);
-
+  if(_symmetries == 1){
+    if(_kind == ASPL_MATRIX)
+      aspl_mat(h_degree, s_degree, adjacency, diameter, sum, ASPL);
+    else // _kind == ASPL_MATRIX_BFS
+      aspl_bfs(h_degree, s_degree, adjacency, diameter, sum, ASPL);
+  }
+  else{
+    if(_kind == ASPL_MATRIX)
+      aspl_mat_s(h_degree, s_degree, adjacency, diameter, sum, ASPL);
+    else // _kind == ASPL_MATRIX_BFS
+      aspl_bfs_s(h_degree, s_degree, adjacency, diameter, sum, ASPL);
+  }
   _elapsed_time += ORP_Get_time() - t;
 
   if(*diameter >= _switches+2){

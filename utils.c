@@ -679,7 +679,6 @@ static void matmul_s(const uint64_t *restrict A, uint64_t *restrict B, const int
   }
 }
 
-
 void ORP_Matmul(const uint64_t *restrict A, uint64_t *restrict B, const int switches, const int radix,
                 const int *restrict s_degree, const int *restrict adjacency, const int elements,
                 const bool enable_avx2)
@@ -698,7 +697,7 @@ void ORP_Matmul_s(const uint64_t *restrict A, uint64_t *restrict B, const int sw
 {
 #ifdef __AVX2__
   if(enable_avx2) matmul_avx2_s(A, B, switches, radix, s_degree, adjacency, elements, symmetries);
-  else            matmu_sl     (A, B, switches, radix, s_degree, adjacency, elements, symmetries);
+  else            matmul_s     (A, B, switches, radix, s_degree, adjacency, elements, symmetries);
 #else
   matmul_s(A, B, switches, radix, s_degree, adjacency, elements, symmetries);
 #endif

@@ -34,22 +34,8 @@ int main(int argc, char **argv)
   
   int (*adjacency)[radix] = malloc(sizeof(int) * based_switches * radix); // int adjacency[based_switches][radix];
   ORP_Conv_edge2adjacency_s(hosts, switches, radix, lines, edge, symmetries, adjacency);
-  int (*edge2)[2] = malloc(sizeof(int)*lines*2);
-  ORP_Conv_adjacency2edge_s(hosts, switches, radix, h_degree, s_degree, adjacency, symmetries, edge2);
 
-  for(int i=0;i<lines;i++)
-    printf("%d : %d %d : %d %d\n", i, edge[i][0], edge[i][1], edge2[i][0], edge2[i][1]);
-  
-  /*
-  printf("%d %d\n", based_switches, radix);
-  for(int i=0;i<based_switches;i++){
-    for(int j=0;j<radix;j++){
-      printf("%3d", adjacency[i][j]);
-    }
-    printf("\n");
-    }*/
-  /*
-  ORP_Init_aspl(hosts, switches, radix);
+  ORP_Init_aspl_s(hosts, switches, radix, symmetries);
   ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
   ORP_Finalize_aspl();
 
@@ -64,6 +50,6 @@ int main(int argc, char **argv)
   free(h_degree);
   free(s_degree);
   free(edge);
-  */
+
   return 0;
 }
