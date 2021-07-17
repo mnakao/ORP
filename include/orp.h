@@ -29,6 +29,7 @@ bool ORP_Verify_edge(int hosts, int switches, int radix, int lines, void *edge);
 int ORP_Optimize_switches(int hosts, int radix);
 
 void ORP_Init_aspl_s(int hosts, int switches, int radix, int symmetries);
+void* ORP_Generate_random_s(int hosts, int switches, int radix, bool assign_evenly, int symmetries, int *lines, int *h_degree, int *s_degree);
 void ORP_Set_degrees_s(int hosts, int switches, int lines, void *edge, int symmetries, int *h_degree, int *s_degree);
 void ORP_Set_host_degree_s(int hosts, int switches, int lines, void *edge, int symmetries, int *h_degree);
 void ORP_Set_switch_degree_s(int hosts, int switches, int lines, void *edge, int symmetries, int *s_degree);
