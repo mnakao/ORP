@@ -766,14 +766,18 @@ void ORP_Matmul_s(const uint64_t *restrict A, uint64_t *restrict B, const int sw
 }
 
 static int simple_top_down_step(const int switches, const int num_frontier, const int radix,
-                                int *s_degree, int (*adjacency)[radix],
-                                const int* restrict frontier, int* restrict next, char* restrict bitmap)
+                                int *s_degree, int (*adjacency)[radix], const int* restrict frontier,
+                                const int symmetries, int* restrict next, char* restrict bitmap)
 {
+  int based_switches = switches/symmetries;
   int count = 0;
   for(int i=0;i<num_frontier;i++){
     int v = frontier[i];
-    for(int j=0;j<s_degree[v];j++){
-      int n = adjacency[v][j];
+    int p = v/based_switches;
+    int m = v - p * based_switches;
+    for(int j=0;j<s_degree[m];j++){
+      int n = adjacency[m][j] + p * based_switches;
+      if(n >= switches) n -= switches;
       if(bitmap[n] == NOT_VISITED){
         bitmap[n] = VISITED;
         next[count++] = n;
@@ -783,7 +787,7 @@ static int simple_top_down_step(const int switches, const int num_frontier, cons
   return count;
 }
 
-static bool simple_bfs(const int switches, const int radix, int* s_degree, int (*adjacency)[radix])
+static bool simple_bfs(const int switches, const int radix, int* s_degree, int (*adjacency)[radix], const int symmetries)
 {
   char *bitmap  = malloc(sizeof(char) * switches);
   int *frontier = malloc(sizeof(int)  * switches);
@@ -798,7 +802,7 @@ static bool simple_bfs(const int switches, const int radix, int* s_degree, int (
 
   while(1){
     num_frontier = simple_top_down_step(switches, num_frontier, radix, s_degree,
-                                        adjacency, frontier, next, bitmap);
+                                        adjacency, frontier, symmetries, next, bitmap);
     if(num_frontier == 0) break;
 
     int *tmp = frontier;
@@ -922,14 +926,12 @@ static void backup_restore(const int u[2], const int u_d[2], const int v[2], con
                            const int switches, const int symmetries, const int op, ORP_Restore *r)
 {
   if(r == NULL) return;
-
-  r->switches   = switches;
-  r->symmetries = symmetries;
+  int based_switches = switches/symmetries;
   r->op         = op;
   for(int i=0;i<2;i++){
-    r->u[i]   = u[i];
+    r->u[i]   = u[i]%based_switches;
     r->u_d[i] = u_d[i];
-    r->v[i]   = v[i];
+    r->v[i]   = v[i]%based_switches;
     r->v_d[i] = v_d[i];
   }
 }
@@ -937,13 +939,10 @@ static void backup_restore(const int u[2], const int u_d[2], const int v[2], con
 void ORP_Restore_adjacency(const ORP_Restore r, const int radix, int *h_degree, int *s_degree,
                            int (*adjacency)[radix])
 {
-  int based_switches = r.switches/r.symmetries;
   if(r.op == OP_SWAP){
     for(int i=0;i<2;i++){
-      int n0 = r.v[i] + (r.u[i]/based_switches) * based_switches;
-      int n1 = r.u[i] + (r.v[i]/based_switches) * based_switches;
-      adjacency[r.u[i]%based_switches][r.u_d[i]%based_switches] = (n0 < r.switches)? n0 : n0 - r.switches;
-      adjacency[r.v[i]%based_switches][r.v_d[i]%based_switches] = (n1 < r.switches)? n1 : n1 - r.switches;
+      adjacency[r.u[i]][r.u_d[i]] = r.v[i];
+      adjacency[r.v[i]][r.v_d[i]] = r.u[i];
     }
   }
   else{ // OP_SWING
@@ -1022,7 +1021,6 @@ void ORP_Swing_adjacency(const int switches, const int radix, int h_degree[switc
   // search index
   v_d[0] = search_index(v[0], u[0], u_d[0], s_degree, radix, switches, adjacency);
 
-  // u[0]--v[0], u[1]--h[0] -> u[0]--h[0], u[1]--v[0]
   backup_restore(u, u_d, v, v_d, switches, 1, OP_SWING, r);
   adjacency[v[0]][v_d[0]]           = u[1];
   adjacency[u[0]][u_d[0]]           = adjacency[u[0]][s_degree[u[0]]-1];
@@ -1309,7 +1307,7 @@ void* ORP_Generate_random(const int hosts, const int switches, const int radix, 
   }
 
   // Repeat until there are no unreachable vertices
-  while(simple_bfs(switches, radix, s_degree, adjacency)){
+  while(simple_bfs(switches, radix, s_degree, adjacency, 1)){
     ORP_Swap_adjacency(switches, radix, s_degree, NULL, adjacency);
     if(!assign_evenly) ORP_Swing_adjacency(switches, radix, h_degree, s_degree, NULL, adjacency);
   }
@@ -1407,10 +1405,10 @@ void* ORP_Generate_random_s(const int hosts, const int switches, const int radix
   }
 
   // Repeat until there are no unreachable vertices
-  //  while(simple_bfs(switches, radix, s_degree, adjacency)){
-  //    ORP_Swap_adjacency_s(switches, radix, s_degree, symmetries, NULL, adjacency);
+  while(simple_bfs(switches, radix, s_degree, adjacency, symmetries)){
+    ORP_Swap_adjacency_s(switches, radix, s_degree, symmetries, NULL, adjacency);
   //    if(!assign_evenly) ORP_Swing_adjacency_s(switches, radix, h_degree, s_degree, symmetries, NULL, adjacency);
-  //  }
+  }
 
   ORP_Conv_adjacency2edge_s(hosts, switches, radix, h_degree, s_degree, adjacency, symmetries, edge);
   free(adjacency);
