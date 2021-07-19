@@ -90,6 +90,12 @@ void CHECK_HOSTS_SWITCHS_S(const int hosts, const int switches, const int symmet
     ERROR("switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
 }
 
+void CHECK_SWITCHS_S(const int switches, const int symmetries)
+{
+  if(switches % symmetries != 0)
+    ERROR("switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
+}
+
 void ORP_Malloc(uint64_t **a, const size_t s, const bool enable_avx2)
 {
 #if defined(__ARM_NEON) || defined(__FUJITSU)
@@ -926,12 +932,13 @@ static void backup_restore(const int u[2], const int u_d[2], const int v[2], con
                            const int switches, const int symmetries, const int op, ORP_Restore *r)
 {
   if(r == NULL) return;
-  int based_switches = switches/symmetries;
+  r->switches   = switches;
+  r->symmetries = symmetries;
   r->op         = op;
   for(int i=0;i<2;i++){
-    r->u[i]   = u[i]%based_switches;
+    r->u[i]   = u[i];
     r->u_d[i] = u_d[i];
-    r->v[i]   = v[i]%based_switches;
+    r->v[i]   = v[i];
     r->v_d[i] = v_d[i];
   }
 }
@@ -939,18 +946,38 @@ static void backup_restore(const int u[2], const int u_d[2], const int v[2], con
 void ORP_Restore_adjacency(const ORP_Restore r, const int radix, int *h_degree, int *s_degree,
                            int (*adjacency)[radix])
 {
+  int based_switches = r.switches/r.symmetries;
   if(r.op == OP_SWAP){
-    for(int i=0;i<2;i++){
-      adjacency[r.u[i]][r.u_d[i]] = r.v[i];
-      adjacency[r.v[i]][r.v_d[i]] = r.u[i];
+    if(r.symmetries == 1){
+      for(int i=0;i<2;i++){
+        adjacency[r.u[i]][r.u_d[i]] = r.v[i];
+        adjacency[r.v[i]][r.v_d[i]] = r.u[i];
+      }
+    }
+    else{
+      for(int i=0;i<2;i++){
+        adjacency[r.u[i]%based_switches][r.u_d[i]] = LOCAL_INDEX(r.v[i], r.u[i], r.switches, r.symmetries);
+        adjacency[r.v[i]%based_switches][r.v_d[i]] = LOCAL_INDEX(r.u[i], r.v[i], r.switches, r.symmetries);
+      }
     }
   }
   else{ // OP_SWING
-    h_degree[r.u[0]]--; s_degree[r.u[0]]++; h_degree[r.u[1]]++; s_degree[r.u[1]]--;
-    adjacency[r.v[0]][r.v_d[0]]           = r.u[0];
-    adjacency[r.u[0]][s_degree[r.u[0]]-1] = adjacency[r.u[0]][r.u_d[0]];
-    adjacency[r.u[0]][r.u_d[0]]           = r.v[0];
-    adjacency[r.u[1]][s_degree[r.u[1]]]   = NOT_DEFINED;
+    if(r.symmetries == 1){
+      h_degree[r.u[0]]--; s_degree[r.u[0]]++; h_degree[r.u[1]]++; s_degree[r.u[1]]--;
+      adjacency[r.v[0]][r.v_d[0]]           = r.u[0];
+      adjacency[r.u[0]][s_degree[r.u[0]]-1] = adjacency[r.u[0]][r.u_d[0]];
+      adjacency[r.u[0]][r.u_d[0]]           = r.v[0];
+      adjacency[r.u[1]][s_degree[r.u[1]]]   = NOT_DEFINED;
+    }
+    else{
+      h_degree[r.u[0]%based_switches]--; s_degree[r.u[0]%based_switches]++;
+      h_degree[r.u[1]%based_switches]++; s_degree[r.u[1]%based_switches]--;
+      int tmp = GLOBAL_ADJ(r.switches, radix, r.symmetries, adjacency, r.u[0], r.u_d[0]);
+      adjacency[r.u[0]%based_switches][s_degree[r.u[0]%based_switches]-1] = LOCAL_INDEX(tmp, r.u[0], r.switches, r.symmetries);
+      adjacency[r.u[0]%based_switches][r.u_d[0]] = LOCAL_INDEX(r.v[0], r.u[0], r.switches, r.symmetries);
+      adjacency[r.v[0]%based_switches][r.v_d[0]] = LOCAL_INDEX(r.u[0], r.v[0], r.switches, r.symmetries);
+      adjacency[r.u[1]%based_switches][s_degree[r.u[1]%based_switches]] = NOT_DEFINED;
+    }
   }
 }
 
@@ -977,7 +1004,7 @@ static int search_index(const int v, const int target, const int exclusion, cons
 }
 
 static int search_index_s(const int v, const int target, const int exclusion, const int *s_degree,
-                          const int radix, const int (*adjacency)[radix], const int switches, const int symmetries)
+                          const int radix, const int switches, const int (*adjacency)[radix], const int symmetries)
 {
   int based_switches = switches/symmetries;
   if(v == target){
@@ -1024,9 +1051,61 @@ void ORP_Swing_adjacency(const int switches, const int radix, int h_degree[switc
   backup_restore(u, u_d, v, v_d, switches, 1, OP_SWING, r);
   adjacency[v[0]][v_d[0]]           = u[1];
   adjacency[u[0]][u_d[0]]           = adjacency[u[0]][s_degree[u[0]]-1];
-  adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED;
-  adjacency[u[1]][s_degree[u[1]]]   = v[0];
-  h_degree[u[0]]++; s_degree[u[0]]--; h_degree[u[1]]--; s_degree[u[1]]++;
+  adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED; s_degree[u[0]]--;
+  adjacency[u[1]][s_degree[u[1]]]   = v[0];        s_degree[u[1]]++;
+  
+  h_degree[u[0]]++; h_degree[u[1]]--;
+}
+
+void ORP_Swing_adjacency_s(const int switches, const int radix, int h_degree[switches], int s_degree[switches],
+                           const int symmetries, ORP_Restore *r, int adjacency[switches][radix])
+{
+  CHECK_SWITCHS_S(switches, symmetries);
+  
+  int u[2], v[2], u_d[2], v_d[2]; // u_d[1], v[1], and v_d[1] are not used because it is a host.
+  int based_switches = switches/symmetries;
+  
+  while(1){
+    u[0] = get_random(switches);
+    u[1] = get_random(switches);
+    if(u[0] == u[1] || s_degree[u[0]%based_switches] == 1 || h_degree[u[1]%based_switches] == 0) continue;
+
+    u_d[0] = get_random(s_degree[u[0]%based_switches]);
+    v[0]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[0], u_d[0]); // v[0] = adjacency[u[0]][u_d[0]];
+    if(v[0] == u[1]) continue;
+    break;
+  }
+
+  // search index
+  v_d[0] = search_index_s(v[0], u[0], u_d[0], s_degree, radix, switches, adjacency, symmetries);
+  backup_restore(u, u_d, v, v_d, switches, symmetries, OP_SWING, r);
+
+  if(abs(u[0]-v[0]) == switches/2 && switches%2 == 0){
+    int tmp = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[0], s_degree[u[0]%based_switches]-1);
+    adjacency[u[0]%based_switches][u_d[0]] = LOCAL_INDEX(tmp, u[0], switches, symmetries);
+    adjacency[u[0]%based_switches][s_degree[u[0]%based_switches]-1] = NOT_DEFINED;
+    s_degree[u[0]%based_switches]--;
+    adjacency[u[1]%based_switches][s_degree[u[1]%based_switches]] = LOCAL_INDEX(u[1]+switches/2, u[1], switches, symmetries);
+    s_degree[u[1]%based_switches]++;
+    h_degree[u[0]%based_switches]++; h_degree[u[1]%based_switches]--;
+    // adjacency[u[0]][u_d[0]]           = adjacency[u[0]][s_degree[u[0]]-1];
+    // adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED;
+    // adjacency[u[1]][s_degree[u[1]]]   = u[1] + switches/2;
+  }
+  else{
+    adjacency[v[0]%based_switches][v_d[0]] = LOCAL_INDEX(u[1], v[0], switches, symmetries);
+    int tmp = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[0], s_degree[u[0]%based_switches]-1);
+    adjacency[u[0]%based_switches][u_d[0]] = LOCAL_INDEX(tmp, u[0], switches, symmetries);
+    adjacency[u[0]%based_switches][s_degree[u[0]%based_switches]-1] = NOT_DEFINED;
+    s_degree[u[0]%based_switches]--;
+    adjacency[u[1]%based_switches][s_degree[u[1]%based_switches]] = LOCAL_INDEX(v[0], u[1], switches, symmetries);
+    s_degree[u[1]%based_switches]++;
+    h_degree[u[0]%based_switches]++; h_degree[u[1]%based_switches]--;
+    // adjacency[v[0]][v_d[0]]           = u[1];
+    // adjacency[u[0]][u_d[0]]           = adjacency[u[0]][s_degree[u[0]]-1];
+    // adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED
+    // adjacency[u[1]][s_degree[u[1]]]   = v[0];
+  }
 }
 
 void ORP_Swap_adjacency(const int switches, const int radix, const int s_degree[switches],
@@ -1076,7 +1155,7 @@ static bool swap_adjacency_1opt_s(const int u, const int u_d, const int switches
   int based_switches = switches/symmetries;
   int v = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u, u_d);
   if(IS_DIAMETER(u, v, switches, symmetries)) return false;
-  int v_d = search_index_s(v, u, u_d, s_degree, radix, adjacency, switches, symmetries);
+  int v_d = search_index_s(v, u, u_d, s_degree, radix, switches, adjacency, symmetries);
   int new_v;
   if((u-v)%based_switches == 0){
     if(symmetries <= 4) return false;
@@ -1108,6 +1187,8 @@ static bool swap_adjacency_1opt_s(const int u, const int u_d, const int switches
 void ORP_Swap_adjacency_s(const int switches, const int radix, const int *s_degree, const int symmetries,
                           ORP_Restore *r, int adjacency[switches/symmetries][radix])
 {
+  CHECK_SWITCHS_S(switches, symmetries);
+  
   int u[2], v[2], u_d[2], v_d[2], based_switches = switches/symmetries;
 
   while(1){
@@ -1127,8 +1208,8 @@ void ORP_Swap_adjacency_s(const int switches, const int radix, const int *s_degr
     }
 
     // search index
-    v_d[0] = search_index_s(v[0], u[0], u_d[0], s_degree, radix, adjacency, switches, symmetries);
-    v_d[1] = search_index_s(v[1], u[1], u_d[1], s_degree, radix, adjacency, switches, symmetries);
+    v_d[0] = search_index_s(v[0], u[0], u_d[0], s_degree, radix, switches, adjacency, symmetries);
+    v_d[1] = search_index_s(v[1], u[1], u_d[1], s_degree, radix, switches, adjacency, symmetries);
     
     // backup for restore
     backup_restore(u, u_d, v, v_d, switches, symmetries, OP_SWAP, r);
@@ -1403,11 +1484,25 @@ void* ORP_Generate_random_s(const int hosts, const int switches, const int radix
     ORP_Swap_adjacency_s(switches, radix, s_degree, symmetries, NULL, adjacency);
     //    if(!assign_evenly) ORP_Swing_adjacency_s(switches, radix, h_degree, s_degree, symmetries, NULL, adjacency);
   }
-
+  /*
+  for(int i=0;i<switches/symmetries;i++){
+    for(int j=0;j<radix;j++){
+      printf("%3d", adjacency[i][j]);
+    }
+    printf("\n");
+  }
+  printf("--\n");*/
+  ORP_Conv_adjacency2edge_s(hosts, switches, radix, h_degree, s_degree, adjacency, symmetries, edge);
+  //  ORP_Print_switch(hosts, *lines, edge);
+  //  printf("--\n");
+  for(int i=0;i<tmp_lines*GEN_GRAPH_ITERS;i++){
+     ORP_Swing_adjacency_s(switches, radix, h_degree, s_degree, symmetries, NULL, adjacency);
+  }
+  exit(0);
   // Repeat until there are no unreachable vertices
   while(simple_bfs(switches, radix, s_degree, adjacency, symmetries)){
     ORP_Swap_adjacency_s(switches, radix, s_degree, symmetries, NULL, adjacency);
-  //    if(!assign_evenly) ORP_Swing_adjacency_s(switches, radix, h_degree, s_degree, symmetries, NULL, adjacency);
+    if(!assign_evenly) ORP_Swing_adjacency_s(switches, radix, h_degree, s_degree, symmetries, NULL, adjacency);
   }
 
   ORP_Conv_adjacency2edge_s(hosts, switches, radix, h_degree, s_degree, adjacency, symmetries, edge);
