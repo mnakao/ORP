@@ -75,10 +75,9 @@ int main(int argc, char **argv)
 
   //  int (*adjacency)[switches] = malloc(sizeof(int) * switches * radix);
   //  ORP_Conv_edge2adjacency(hosts, switches, radix, lines, edge, adjacency);
-  //  ORP_Print_adjacency(hosts, switches, radix, s_degree, adjacency);
-  //  printf("%d %d %d\n", hosts, switches, radix);
-  //  ORP_Print_edge(lines, edge);
-  // ORP_Print_switch(hosts, lines, edge);
+  printf("%d %d %d\n", hosts, switches, radix);
+  ORP_Print_edge(lines, edge);
+  //ORP_Print_switch(hosts, lines, edge);
 
   return 0;
 }
