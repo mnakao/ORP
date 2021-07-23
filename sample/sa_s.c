@@ -18,8 +18,8 @@ static double uniform_rand()
   return ((double)random()+1.0)/((double)RAND_MAX+2.0);
 }
 
-bool accept(const int switches, const int current_diameter, const int diameter, const double current_ASPL,
-            const double ASPL, const double temp, const bool ASPL_priority)
+bool accept_s(const int switches, const int current_diameter, const int diameter, const double current_ASPL,
+              const double ASPL, const double temp, const bool ASPL_priority, const int symmetries)
 {
   if(diameter < current_diameter && !ASPL_priority){
     return true;
@@ -32,13 +32,8 @@ bool accept(const int switches, const int current_diameter, const int diameter, 
       return true;
     }
     else{
-      double diff = ((current_ASPL-ASPL)*switches*switches);
-      if(exp(diff/temp) > uniform_rand()){
-        return true;
-      }
-      else{
-        return false;
-      }
+      double diff = ((current_ASPL-ASPL)*switches*switches/symmetries);
+      return exp(diff/temp) > uniform_rand();
     }
   }
 }
@@ -52,10 +47,11 @@ static double get_time()
 
 static void print_help(char *argv)
 {
-  fprintf(stderr, "%s -H hosts -S switches -R radix [-f input] [-o output] [-s seed] [-n calcs] [-w max_temp] [-c min_temp] [-A] [-E]\n", argv);
+  fprintf(stderr, "%s -H hosts -S switches -R radix -G symmetries [-f input] [-o output] [-s seed] [-n calcs] [-w max_temp] [-c min_temp] [-A] [-E]\n", argv);
   fprintf(stderr, "  -H : Number of hosts (Required when -f option is not specified)\n");
   fprintf(stderr, "  -S : Number of switches (Set automatically when -f and -S are not specified).\n");
   fprintf(stderr, "  -R : Radix (Required when -f is not specified)\n");
+  fprintf(stderr, "  -G : Numer of symmetries (Default: 1)\n");
   fprintf(stderr, "  -f : Input file\n");
   fprintf(stderr, "  -o : Output file\n");
   fprintf(stderr, "  -s : Random seed (Default: %d)\n", DEFAULT_SEED);
@@ -67,11 +63,11 @@ static void print_help(char *argv)
   exit(1);
 }
 
-static void set_args(const int argc, char **argv, int *hosts, int *switches, int *radix, char **infname, char **outfname,
+static void set_args(const int argc, char **argv, int *hosts, int *switches, int *radix, int *symmetries, char **infname, char **outfname,
 		     int *seed, long *ncalcs, double *max_temp, double *min_temp, bool *assign_evenly, bool *ASPL_priority)
 {
   int result;
-  while((result = getopt(argc,argv,"H:S:R:f:o:s:n:w:c:AE"))!=-1){
+  while((result = getopt(argc,argv,"H:S:R:G:f:o:s:n:w:c:AE"))!=-1){
     switch(result){
     case 'H':
       *hosts = atoi(optarg);
@@ -87,6 +83,11 @@ static void set_args(const int argc, char **argv, int *hosts, int *switches, int
       *radix = atoi(optarg);
       if(*radix <= 3)
         ERROR("-R value > 3\n");
+      break;
+    case 'G':
+      *symmetries = atoi(optarg);
+      if(*symmetries <= 0)
+        ERROR("-G value > 0\n");
       break;
     case 'f':
       if(strlen(optarg) > MAX_FILENAME_LENGTH)
@@ -137,37 +138,44 @@ int main(int argc, char *argv[])
   char *infname = NULL, *outfname = NULL;
   bool ASPL_priority = false, assign_evenly = false;
   int hosts = NOT_DEFINED, switches = NOT_DEFINED, radix = NOT_DEFINED, seed = DEFAULT_SEED;
+  int symmetries = 1, based_switches = NOT_DEFINED;
   int lines, diameter, current_diameter, best_diameter, low_diameter;
   int (*edge)[2], *h_degree, *s_degree;
   long sum, best_sum, ncalcs = DEFAULT_NCALCS;
   double max_temp = DEFAULT_MAX_TEMP, min_temp = DEFAULT_MIN_TEMP, ASPL, current_ASPL, best_ASPL, low_ASPL;
   ORP_Restore r;
 
-  set_args(argc, argv, &hosts, &switches, &radix, &infname, &outfname, &seed,
+  set_args(argc, argv, &hosts, &switches, &radix, &symmetries, &infname, &outfname, &seed,
 	   &ncalcs, &max_temp, &min_temp, &assign_evenly, &ASPL_priority);
-  
+
   ORP_Srand(seed);
   if(infname){
     ORP_Read_property(infname, &hosts, &switches, &radix, &lines);
-    h_degree = malloc(sizeof(int) * switches);
-    s_degree = malloc(sizeof(int) * switches);
+    if(hosts%symmetries != 0 || switches%symmetries != 0)
+      ERROR("hosts and switches must be even numbers\n ");
+    
+    based_switches = switches/symmetries;
+    h_degree = malloc(sizeof(int) * based_switches);
+    s_degree = malloc(sizeof(int) * based_switches);
     edge     = malloc(sizeof(int) * lines * 2);
     ORP_Read_edge(infname, edge);
-    ORP_Set_degrees(hosts, switches, lines, edge, h_degree, s_degree);
+    ORP_Set_degrees_s(hosts, switches, lines, edge, symmetries, h_degree, s_degree);
   }
   else{
     if(hosts == NOT_DEFINED || radix == NOT_DEFINED)
       print_help(argv[0]);
-
-    if(switches == NOT_DEFINED)
+    else if(switches == NOT_DEFINED)
       switches = ORP_Optimize_switches(hosts, radix);
 
-    h_degree = malloc(sizeof(int) * switches);
-    s_degree = malloc(sizeof(int) * switches);
-    edge     = ORP_Generate_random(hosts, switches, radix, assign_evenly, &lines, h_degree, s_degree);
+    if(hosts%symmetries != 0 || switches%symmetries != 0)
+      ERROR("hosts and switches must be even numbers\n ");
+    based_switches = switches/symmetries;
+    h_degree = malloc(sizeof(int) * based_switches);
+    s_degree = malloc(sizeof(int) * based_switches);
+    edge     = ORP_Generate_random_s(hosts, switches, radix, assign_evenly, symmetries, &lines, h_degree, s_degree);
   }
   
-  printf("Hosts = %d, Switches = %d, Radix = %d\n", hosts, switches, radix);
+  printf("Hosts = %d, Switches = %d, Radix = %d, Symmetries = %d\n", hosts, switches, radix, symmetries);
   printf("Random seed = %d\n", seed);
   printf("Number of calculations = %ld\n", ncalcs);
   printf("Max, Min temperature = %f, %f\n", max_temp, min_temp);
@@ -176,21 +184,21 @@ int main(int argc, char *argv[])
   if(outfname)
     printf("Output file name = %s\n", outfname);
 
-  int (*adjacency)[radix]      = malloc(sizeof(int) * switches * radix);
-  int (*best_adjacency)[radix] = malloc(sizeof(int) * switches * radix);
-  int *best_h_degree           = malloc(sizeof(int) * switches);
-  int *best_s_degree           = malloc(sizeof(int) * switches);
+  int (*adjacency)[radix]      = malloc(sizeof(int) * based_switches * radix);
+  int (*best_adjacency)[radix] = malloc(sizeof(int) * based_switches * radix);
+  int *best_h_degree           = malloc(sizeof(int) * based_switches);
+  int *best_s_degree           = malloc(sizeof(int) * based_switches);
 
-  ORP_Conv_edge2adjacency(hosts, switches, radix, lines, edge, adjacency);
-  ORP_Init_aspl(hosts, switches, radix);
+  ORP_Conv_edge2adjacency_s(hosts, switches, radix, lines, edge, symmetries, adjacency);
+  ORP_Init_aspl_s(hosts, switches, radix, symmetries);
   ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
 
   best_diameter = current_diameter = diameter;
   best_sum      = sum;
   best_ASPL     = current_ASPL = ASPL;
-  memcpy(best_adjacency, adjacency, sizeof(int) * switches * radix);
-  memcpy(best_h_degree,  h_degree,  sizeof(int) * switches);
-  memcpy(best_s_degree,  s_degree,  sizeof(int) * switches);
+  memcpy(best_adjacency, adjacency, sizeof(int) * based_switches * radix);
+  memcpy(best_h_degree,  h_degree,  sizeof(int) * based_switches);
+  memcpy(best_s_degree,  s_degree,  sizeof(int) * based_switches);
 
   ORP_Set_lbounds(hosts, radix, &low_diameter, &low_ASPL);
   double sa_time = get_time();
@@ -207,9 +215,9 @@ int main(int argc, char *argv[])
 	printf("%ld\t%f\t%d\t%f\n", i, temp, best_diameter-low_diameter, best_ASPL-low_ASPL);
 
       if(assign_evenly || uniform_rand() > 0.5)
-        ORP_Swap_adjacency(switches, radix, s_degree, &r, adjacency);
+        ORP_Swap_adjacency_s(switches, radix, s_degree, symmetries, &r, adjacency);
       else
-        ORP_Swing_adjacency(switches, radix, h_degree, s_degree, &r, adjacency);
+        ORP_Swing_adjacency_s(switches, radix, symmetries, h_degree, s_degree, &r, adjacency);
       
       ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
       
@@ -217,16 +225,16 @@ int main(int argc, char *argv[])
 	best_diameter = diameter;
 	best_sum      = sum;
 	best_ASPL     = ASPL;
-	memcpy(best_adjacency, adjacency, sizeof(int) * switches * radix);
-        memcpy(best_h_degree,  h_degree,  sizeof(int) * switches);
-        memcpy(best_s_degree,  s_degree,  sizeof(int) * switches);
+	memcpy(best_adjacency, adjacency, sizeof(int) * based_switches * radix);
+        memcpy(best_h_degree,  h_degree,  sizeof(int) * based_switches);
+        memcpy(best_s_degree,  s_degree,  sizeof(int) * based_switches);
 	if(diameter == low_diameter && ASPL == low_ASPL){
 	  printf("Find optimum solution\n");
 	  break;
 	}
       }
       
-      if(accept(switches, current_diameter, diameter, current_ASPL, ASPL, temp, ASPL_priority)){
+      if(accept_s(switches, current_diameter, diameter, current_ASPL, ASPL, temp, ASPL_priority, symmetries)){
 	current_diameter = diameter;
 	current_ASPL     = ASPL;
       }
@@ -238,7 +246,7 @@ int main(int argc, char *argv[])
   }
   sa_time = get_time() - sa_time;
   ORP_Finalize_aspl();
-  ORP_Conv_adjacency2edge(hosts, switches, radix, best_h_degree, best_s_degree, best_adjacency, edge);
+  ORP_Conv_adjacency2edge_s(hosts, switches, radix, best_h_degree, best_s_degree, best_adjacency, symmetries, edge);
   
   printf("---\n");
   printf("Diameter        = %d\n", best_diameter);
