@@ -1,6 +1,6 @@
 #include <stdbool.h>
 typedef struct {
-  int u[2], v[2], u_d[2], v_d[2], rand, op;
+  int u[2], v[2], u_d[2], v_d[2], switches, symmetries, op;
 } ORP_Restore;
 
 void ORP_Conv_adjacency2edge(int hosts, int switches, int radix, int *h_degree, int *s_degree, void *adjacency, void *edge);
