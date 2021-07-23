@@ -35,3 +35,5 @@ void ORP_Set_host_degree_s(int hosts, int switches, int lines, void *edge, int s
 void ORP_Set_switch_degree_s(int hosts, int switches, int lines, void *edge, int symmetries, int *s_degree);
 void ORP_Conv_edge2adjacency_s(int hosts, int switches, int radix, int lines, void *edge, int symmetries, void *adjacency);
 void ORP_Conv_adjacency2edge_s(int hosts, int switches, int radix, int *h_degree, int *s_degree, void *adjacency, int symmetries, void *edge);
+void ORP_Swap_adjacency_s(int switches, int radix, int *s_degree, int symmetries, ORP_Restore *restore, void *adjacency);
+void ORP_Swing_adjacency_s(int switches, int radix, int symmetries, int *h_degree, int *s_degree, ORP_Restore *restore, void *adjacency);

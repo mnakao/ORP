@@ -72,12 +72,8 @@ int main(int argc, char **argv)
   int *s_degree  = malloc(sizeof(int) * switches/symmetries);
   int *h_degree  = malloc(sizeof(int) * switches/symmetries);
   int (*edge)[2] = ORP_Generate_random_s(hosts, switches, radix, assign_evenly, symmetries, &lines, h_degree, s_degree);
-
-  //  int (*adjacency)[switches] = malloc(sizeof(int) * switches * radix);
-  //  ORP_Conv_edge2adjacency(hosts, switches, radix, lines, edge, adjacency);
   printf("%d %d %d\n", hosts, switches, radix);
   ORP_Print_edge(lines, edge);
-  //ORP_Print_switch(hosts, lines, edge);
-
+  
   return 0;
 }
