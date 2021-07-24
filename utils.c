@@ -66,12 +66,16 @@ static bool check_rotated_edges_overlap(const int u0, const int v0, const int u1
 static bool check_multiple_edges_s(const int u, const int u_d, const int v, const int switches, const int radix,
                                    const int *s_degree, const int symmetries, const int adjacency[switches/symmetries][radix])
 {
+  return true;
+  // Not much performance change, always return true;
+#if 0
   if(u >= switches/symmetries) ERROR("Something Wrong (id=0)\n");
   for(int i=0;i<s_degree[u];i++)
     if(i!=u_d && adjacency[u][i] == v)
       return false;
 
   return true;
+#endif
 }
 
 static bool check_multiple_edges(const int u, const int u_d, const int v, const int switches, const int radix,
