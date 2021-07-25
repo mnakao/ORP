@@ -33,12 +33,7 @@ bool accept(const int switches, const int current_diameter, const int diameter, 
     }
     else{
       double diff = ((current_ASPL-ASPL)*switches*switches);
-      if(exp(diff/temp) > uniform_rand()){
-        return true;
-      }
-      else{
-        return false;
-      }
+      return (exp(diff/temp) > uniform_rand());
     }
   }
 }

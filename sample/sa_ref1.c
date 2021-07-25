@@ -38,12 +38,7 @@ bool accept(const int switches, const int current_diameter, const int diameter, 
     }
     else{
       double diff = ((current_ASPL-ASPL)*switches*switches);
-      if(exp(diff/temp) > uniform_rand()){
-        return true;
-      }
-      else{
-        return false;
-      }
+      return (exp(diff/temp) > uniform_rand());
     }
   }
 }
@@ -152,6 +147,7 @@ static int search_index(const int v, const int target, const int exclusion,
   }
 
   ERROR("Something Wrong (id=0)\n");
+  return -1; // dummy
 }
 
 int main(int argc, char *argv[])
@@ -222,7 +218,7 @@ int main(int argc, char *argv[])
   else{
     double cooling_rate = pow(min_temp/max_temp, (double)1.0/ncalcs);
     double temp = max_temp;
-    int	interval = (ncalcs < 100)? 1 : ncalcs/100;
+    long interval = (ncalcs < 100)? 1 : ncalcs/100;
     long j = 0;
     printf("Ncalcs : Temp : Diameter Gap : ASPL Gap\n");
     for(long i=0;i<ncalcs;i++){
@@ -247,7 +243,7 @@ int main(int argc, char *argv[])
         if(v[1] == u[0] || v[0] == v[1]) continue;
         else if(h_degree[u[0]] == 0 && h_degree[u[1]] == 0 && h_degree[v[0]] == 0 && h_degree[v[1]] == 0)
           enable_swing = false;
-	else if(h_degree[v[1]] == 0)     continue;
+	else if(h_degree[u[1]] == 0)     continue;
         
         break;
       }
@@ -257,11 +253,11 @@ int main(int argc, char *argv[])
 
       // SWING
       if(enable_swing){
-        adjacency[v[0]][v_d[0]]           = v[1];
+        adjacency[v[0]][v_d[0]]           = u[1];
         adjacency[u[0]][u_d[0]]           = adjacency[u[0]][s_degree[u[0]]-1];
         adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED;
-        adjacency[v[1]][s_degree[v[1]]]   = v[0];
-        h_degree[u[0]]++; s_degree[u[0]]--; h_degree[v[1]]--; s_degree[v[1]]++;
+        adjacency[v[1]][s_degree[u[1]]]   = v[0];
+        h_degree[u[0]]++; s_degree[u[0]]--; h_degree[u[1]]--; s_degree[u[1]]++;
 
         ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
 
@@ -285,20 +281,29 @@ int main(int argc, char *argv[])
       }
       else{
         if(enable_swing){ // UNDO
-          h_degree[u[0]]--; s_degree[u[0]]++; h_degree[v[1]]++; s_degree[v[1]]--;
+          h_degree[u[0]]--; s_degree[u[0]]++; h_degree[u[1]]++; s_degree[u[1]]--;
           adjacency[v[0]][v_d[0]]           = u[0];
           adjacency[u[0]][s_degree[u[0]]-1] = adjacency[u[0]][u_d[0]];
           adjacency[u[0]][u_d[0]]           = v[0];
-          adjacency[v[1]][s_degree[v[1]]]   = NOT_DEFINED;
+          adjacency[u[1]][s_degree[u[1]]]   = NOT_DEFINED;
           temp *= cooling_rate;
           i++;
         }
 
         // SWAP
-        adjacency[u[0]][u_d[0]] = u[1];
-        adjacency[u[1]][u_d[1]] = u[0];
-        adjacency[v[0]][v_d[0]] = v[1];
-        adjacency[v[1]][v_d[1]] = v[0];
+        if(get_random(2)){
+          adjacency[u[0]][u_d[0]] = v[1];
+          adjacency[u[1]][u_d[1]] = v[0];
+          adjacency[v[0]][v_d[0]] = u[1];
+          adjacency[v[1]][v_d[1]] = u[0];
+        }
+        else{
+          adjacency[u[0]][u_d[0]] = u[1];
+          adjacency[u[1]][u_d[1]] = u[0];
+          adjacency[v[0]][v_d[0]] = v[1];
+          adjacency[v[1]][v_d[1]] = v[0];
+        }
+        
         ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
         
         if(diameter < best_diameter || (diameter == best_diameter && ASPL < best_ASPL)){
