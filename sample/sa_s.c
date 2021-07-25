@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
   else{
     double cooling_rate = pow(min_temp/max_temp, (double)1.0/ncalcs);
     double temp = max_temp;
-    int	interval = (ncalcs < 100)? 1 : ncalcs/100;
+    long interval = (ncalcs < 100)? 1 : ncalcs/100;
     printf("Ncalcs : Temp : Diameter Gap : ASPL Gap\n");
     for(long i=0;i<ncalcs;i++){
       if(i%interval == 0)
