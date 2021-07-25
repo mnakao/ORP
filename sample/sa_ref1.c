@@ -256,7 +256,7 @@ int main(int argc, char *argv[])
         adjacency[v[0]][v_d[0]]           = u[1];
         adjacency[u[0]][u_d[0]]           = adjacency[u[0]][s_degree[u[0]]-1];
         adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED;
-        adjacency[v[1]][s_degree[u[1]]]   = v[0];
+        adjacency[u[1]][s_degree[u[1]]]   = v[0];
         h_degree[u[0]]++; s_degree[u[0]]--; h_degree[u[1]]--; s_degree[u[1]]++;
 
         ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
