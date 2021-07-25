@@ -166,9 +166,9 @@ void CHECK_PARAMETERS(const int hosts, const int switches, const int radix)
   else if(switches*radix-2*(switches-1) < hosts)
     ERROR("Switches (%d) * Radix (%d) - 2 * (Switches (%d) - 1) = %d >= Host (%d)\n",
           switches, radix, switches, switches*radix-2*(switches-1), hosts);
-  else if(switches*radix-hosts > switches*(switches-1))
-    ERROR("Switches (%d) * Radix (%d) - Hosts (%d) = %d > %d = Switches (%d) * (Switches (%d) - 1)\n",
-          switches, radix, hosts, (switches*radix-hosts), switches*(switches-1), switches, switches);
+  //  else if(switches*radix-hosts > switches*(switches-1))
+  //    ERROR("Switches (%d) * Radix (%d) - Hosts (%d) = %d > %d = Switches (%d) * (Switches (%d) - 1)\n",
+  //          switches, radix, hosts, (switches*radix-hosts), switches*(switches-1), switches, switches);
 }
 
 // This function is based on the following paper.
