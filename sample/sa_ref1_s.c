@@ -277,11 +277,6 @@ int main(int argc, char *argv[])
     else if(switches == NOT_DEFINED)
       switches = ORP_Optimize_switches(hosts, radix);
 
-    int lines_complete_graph = hosts + (switches * (switches-1))/2;
-    int lines_normal_graph   = (switches * radix - hosts)/2 + hosts;
-    if(lines_complete_graph < lines_normal_graph)
-      ERROR("Please use ../misc/complete_graph.x\n");
-    
     if(hosts%symmetries != 0 || switches%symmetries != 0)
       ERROR("hosts and switches must be even numbers\n ");
     based_switches = switches/symmetries;
@@ -340,7 +335,7 @@ int main(int argc, char *argv[])
 
         u_d[0] = get_random(s_degree[u[0]%based_switches]);
         v[0]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[0], u_d[0]); // v[0] = adjacency[u[0]][u_d[0]];
-        if(v[0] == u[1]) continue;
+        // if(v[0] == u[1]) continue;
 
         u_d[1] = get_random(s_degree[u[1]%based_switches]);
         v[1]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[1], u_d[1]); // v[1] = adjacency[u[1]][u_d[1]];
