@@ -167,6 +167,11 @@ int main(int argc, char *argv[])
     else if(switches == NOT_DEFINED)
       switches = ORP_Optimize_switches(hosts, radix);
 
+    int lines_complete_graph = hosts + (switches * (switches-1))/2;
+    int lines_normal_graph   = (switches * radix - hosts)/2 + hosts;
+    if(lines_complete_graph < lines_normal_graph)
+      ERROR("Please use ../misc/complete_graph.x\n");
+    
     if(hosts%symmetries != 0 || switches%symmetries != 0)
       ERROR("hosts and switches must be even numbers\n ");
     based_switches = switches/symmetries;

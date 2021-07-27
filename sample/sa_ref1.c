@@ -180,6 +180,11 @@ int main(int argc, char *argv[])
     if(switches == NOT_DEFINED)
       switches = ORP_Optimize_switches(hosts, radix);
 
+    int lines_complete_graph = hosts + (switches * (switches-1))/2;
+    int lines_normal_graph   = (switches * radix - hosts)/2 + hosts;
+    if(lines_complete_graph < lines_normal_graph)
+      ERROR("Please use ../misc/complete_graph.x\n");
+    
     h_degree = malloc(sizeof(int) * switches);
     s_degree = malloc(sizeof(int) * switches);
     edge     = ORP_Generate_random(hosts, switches, radix, false, &lines, h_degree, s_degree);
