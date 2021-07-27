@@ -117,19 +117,23 @@ int main(int argc, char *argv[])
   generate_graph(hosts, switches, radix, lines, h_degree, s_degree, edge, adj);
 
   ORP_Set_lbounds(hosts, radix, &low_diameter, &low_ASPL);
-  for(h_degree[0]=9;h_degree[0]<18;h_degree[0]++){
-    for(h_degree[1]=h_degree[0];h_degree[1]<18;h_degree[1]++){
-      for(h_degree[2]=h_degree[1];h_degree[2]<18;h_degree[2]++){
-        for(h_degree[3]=h_degree[2];h_degree[3]<18;h_degree[3]++){
-          for(h_degree[4]=h_degree[3];h_degree[4]<18;h_degree[4]++){
-            for(h_degree[5]=h_degree[4];h_degree[5]<18;h_degree[5]++){
-              for(h_degree[6]=h_degree[5];h_degree[6]<18;h_degree[6]++){
-                for(h_degree[7]=h_degree[6];h_degree[7]<18;h_degree[7]++){
-                  if(h_degree[0]+h_degree[1]+h_degree[2]+h_degree[3]+h_degree[4]+h_degree[5]+h_degree[6]+h_degree[7] == 128){
+  int max = radix - s_degree[switches-1] + 1;
+  for(h_degree[0]=0;h_degree[0]<max;h_degree[0]++){
+    for(h_degree[1]=h_degree[0];h_degree[1]<max;h_degree[1]++){
+      for(h_degree[2]=h_degree[1];h_degree[2]<max;h_degree[2]++){
+        for(h_degree[3]=h_degree[2];h_degree[3]<max;h_degree[3]++){
+          for(h_degree[4]=h_degree[3];h_degree[4]<max;h_degree[4]++){
+            for(h_degree[5]=h_degree[4];h_degree[5]<max;h_degree[5]++){
+              for(h_degree[6]=h_degree[5];h_degree[6]<max;h_degree[6]++){
+                for(h_degree[7]=h_degree[6];h_degree[7]<max;h_degree[7]++){
+                  for(h_degree[8]=h_degree[7];h_degree[8]<max;h_degree[8]++){
+                  int s = 0;
+                  for(int i=0;i<9;i++) s += h_degree[i];
+                  if(s == hosts){
                     printf("%d %d %d %d %d %d %d %d\n",
                            h_degree[0], h_degree[1], h_degree[2], h_degree[3], h_degree[4], h_degree[5], h_degree[6], h_degree[7]);
                     set_aspl(hosts, switches, h_degree, &best_diameter, &best_sum, &best_ASPL);
-                    printf("ASPL Gap        = %.10f (%.10f - %.10f)\n", best_ASPL - low_ASPL, best_ASPL, low_ASPL);
+                    printf("ASPL Gap        = %.10f (%.10f - %.10f)\n", best_ASPL - low_ASPL, best_ASPL, low_ASPL);}
                   }
                 }
               }
@@ -139,18 +143,7 @@ int main(int argc, char *argv[])
       }
     }
   }
-      
-  printf("Hosts = %d, Switches = %d, Radix = %d\n", hosts, switches, radix);
-  if(outfname)
-    printf("Output file name = %s\n", outfname);
-
-  ORP_Set_lbounds(hosts, radix, &low_diameter, &low_ASPL);
-  printf("---\n");
-  printf("Diameter        = %d\n", best_diameter);
-  printf("Diameter Gap    = %d (%d - %d)\n", best_diameter - low_diameter, best_diameter, low_diameter);
-  printf("ASPL            = %.10f (%ld/%.0f)\n", best_ASPL, best_sum, (double)hosts*(hosts-1)/2);
-  printf("ASPL Gap        = %.10f (%.10f - %.10f)\n", best_ASPL - low_ASPL, best_ASPL, low_ASPL);
-
+  
   if(outfname)
     ORP_Write_edge(hosts, switches, radix, lines, edge, outfname);
 

@@ -15,8 +15,10 @@ endif
 LIBS=../liborp.a -lm
 THREADS_LIBS=../liborp_threads.a -lm
 TMP := $(shell mktemp)
-serial: detect_temp.x detect_switches.x histgram.x
+serial: detect_temp.x detect_switches.x histgram.x opt_complete_graph.x
 all: serial
+opt_complete_graph.x: opt_complete_graph.c ../liborp.a ../include/orp.h
+	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 histgram.x: histgram.c
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 detect_temp.x: detect_temp.c ../liborp.a ../include/orp.h
