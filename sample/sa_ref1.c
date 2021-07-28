@@ -159,7 +159,6 @@ int main(int argc, char *argv[])
   int (*edge)[2], *h_degree, *s_degree;
   long sum, best_sum, ncalcs = DEFAULT_NCALCS;
   double max_temp = DEFAULT_MAX_TEMP, min_temp = DEFAULT_MIN_TEMP, ASPL, current_ASPL, best_ASPL, low_ASPL;
-  ORP_Restore r;
 
   set_args(argc, argv, &hosts, &switches, &radix, &infname, &outfname, &seed,
            &ncalcs, &max_temp, &min_temp, &ASPL_priority);
@@ -282,8 +281,8 @@ int main(int argc, char *argv[])
       else{
         if(enable_swing){ // UNDO
           h_degree[u[0]]--; s_degree[u[0]]++; h_degree[u[1]]++; s_degree[u[1]]--;
-          adjacency[v[0]][v_d[0]]           = u[0];
           adjacency[u[0]][s_degree[u[0]]-1] = adjacency[u[0]][u_d[0]];
+          adjacency[v[0]][v_d[0]]           = u[0];
           adjacency[u[0]][u_d[0]]           = v[0];
           adjacency[u[1]][s_degree[u[1]]]   = NOT_DEFINED;
           temp *= cooling_rate;
