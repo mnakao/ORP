@@ -989,8 +989,8 @@ void ORP_Restore_adjacency(const ORP_Restore r, const int radix, int *h_degree, 
   else{ // OP_SWING
     if(r.symmetries == 1){
       h_degree[r.u[0]]--; s_degree[r.u[0]]++; h_degree[r.u[1]]++; s_degree[r.u[1]]--;
-      adjacency[r.v[0]][r.v_d[0]]           = r.u[0];
       adjacency[r.u[0]][s_degree[r.u[0]]-1] = adjacency[r.u[0]][r.u_d[0]];
+      adjacency[r.v[0]][r.v_d[0]]           = r.u[0];
       adjacency[r.u[0]][r.u_d[0]]           = r.v[0];
       adjacency[r.u[1]][s_degree[r.u[1]]]   = NOT_DEFINED;
     }
@@ -1067,7 +1067,7 @@ void ORP_Swing_adjacency(const int switches, const int radix, int h_degree[switc
       
       u_d[0] = get_random(s_degree[u[0]]);
       v[0]   = adjacency[u[0]][u_d[0]];
-      if(v[0] == u[1]) continue;
+      //      if(v[0] == u[1]) continue;
       break;
     }
   
@@ -1105,7 +1105,7 @@ void ORP_Swing_adjacency_s(const int switches, const int radix, const int symmet
       
       u_d[0] = get_random(s_degree[u[0]%based_switches]);
       v[0]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[0], u_d[0]); // v[0] = adjacency[u[0]][u_d[0]];
-      if(v[0] == u[1]) continue;
+      //      if(v[0] == u[1]) continue;
       break;
     }
 
@@ -1157,7 +1157,7 @@ void ORP_Swap_adjacency(const int switches, const int radix, const int s_degree[
       
       u_d[0] = get_random(s_degree[u[0]]);
       v[0]   = adjacency[u[0]][u_d[0]];
-      if(v[0] == u[1]) continue;
+      //      if(v[0] == u[1]) continue;
       
       u_d[1] = get_random(s_degree[u[1]]);
       v[1]   = adjacency[u[1]][u_d[1]];
@@ -1246,7 +1246,7 @@ void ORP_Swap_adjacency_s(const int switches, const int radix, const int *s_degr
       
       u_d[0] = get_random(s_degree[u[0]%based_switches]);
       v[0]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[0], u_d[0]); // v[0] = adjacency[u[0]][u_d[0]];
-      if(v[0] == u[1]) continue;
+      //      if(v[0] == u[1]) continue;
       
       u_d[1] = get_random(s_degree[u[1]%based_switches]);
       v[1]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[1], u_d[1]); // v[1] = adjacency[u[1]][u_d[1]];
