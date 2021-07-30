@@ -1161,7 +1161,8 @@ void ORP_Swap_adjacency(const int switches, const int radix, const int s_degree[
       
       u_d[1] = get_random(s_degree[u[1]]);
       v[1]   = adjacency[u[1]][u_d[1]];
-      if(v[1] == u[0] || v[0] == v[1]) continue;
+      if(/*v[1] == u[0] ||*/ v[0] == v[1]) continue;
+      else if(v[0] == u[1] && v[1] == u[0]) continue;
       break;
     }
     
@@ -1250,7 +1251,8 @@ void ORP_Swap_adjacency_s(const int switches, const int radix, const int *s_degr
       
       u_d[1] = get_random(s_degree[u[1]%based_switches]);
       v[1]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[1], u_d[1]); // v[1] = adjacency[u[1]][u_d[1]];
-      if(v[1] == u[0] || v[0] == v[1]) continue;
+      if(/*v[1] == u[0] || */v[0] == v[1]) continue;
+      else if(v[0] == u[1] && v[1] == u[0]) continue;
       break;
     }
 

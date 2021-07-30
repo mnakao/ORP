@@ -239,7 +239,8 @@ int main(int argc, char *argv[])
 
         u_d[1] = get_random(s_degree[u[1]]);
         v[1]   = adjacency[u[1]][u_d[1]];
-        if(v[1] == u[0] || v[0] == v[1]) continue;
+        if(/*v[1] == u[0] || */v[0] == v[1]) continue;
+        else if(v[0] == u[1] && v[1] == u[0]) continue;
         else if(h_degree[u[0]] == 0 && h_degree[u[1]] == 0 && h_degree[v[0]] == 0 && h_degree[v[1]] == 0)
           enable_swing = false;
 	else if(h_degree[u[1]] == 0)     continue;
