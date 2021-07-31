@@ -327,7 +327,7 @@ int main(int argc, char *argv[])
         j++;
       }
 
-      bool enable_swing = true;
+      bool enable_swing = true, enable_swap = true;
       while(1){
         u[0] = get_random(switches);
         u[1] = get_random(switches);
@@ -396,6 +396,7 @@ int main(int argc, char *argv[])
       if(enable_swing && accept_s(switches, current_diameter, diameter, current_ASPL, ASPL, temp, ASPL_priority, symmetries)){
 	current_diameter = diameter;
 	current_ASPL     = ASPL;
+        temp *= cooling_rate;
       }
       else{
         if(enable_swing){ // UNDO
@@ -411,19 +412,21 @@ int main(int argc, char *argv[])
 
         // SWAP
         if(IS_DIAMETER(u[0], v[0], switches, symmetries) && IS_DIAMETER(u[1], v[1], switches, symmetries)){
-          if((u[0] - u[1])%based_switches == 0)
-            goto swap_end;
-
-          if(get_random(2)){
-            tmp[0] = LOCAL_INDEX(u[1], u[0], switches, symmetries);
-            tmp[1] = LOCAL_INDEX(u[0], u[1], switches, symmetries);
+          if((u[0] - u[1])%based_switches == 0){
+            enable_swap = false;
           }
           else{
-            tmp[0] = LOCAL_INDEX(v[1], u[0], switches, symmetries);
-            tmp[1] = LOCAL_INDEX(v[0], u[1], switches, symmetries);
+            if(get_random(2)){
+              tmp[0] = LOCAL_INDEX(u[1], u[0], switches, symmetries);
+              tmp[1] = LOCAL_INDEX(u[0], u[1], switches, symmetries);
+            }
+            else{
+              tmp[0] = LOCAL_INDEX(v[1], u[0], switches, symmetries);
+              tmp[1] = LOCAL_INDEX(v[0], u[1], switches, symmetries);
+            }
+            adjacency[u[0]%based_switches][u_d[0]] = tmp[0];
+            adjacency[u[1]%based_switches][u_d[1]] = tmp[1];
           }
-          adjacency[u[0]%based_switches][u_d[0]] = tmp[0];
-          adjacency[u[1]%based_switches][u_d[1]] = tmp[1];
         }
         else if(IS_DIAMETER(u[0], v[0], switches, symmetries) || IS_DIAMETER(u[1], v[1], switches, symmetries)){
           if(IS_DIAMETER(u[1], v[1], switches, symmetries)){
@@ -464,70 +467,78 @@ int main(int argc, char *argv[])
         }
         else if(check_rotated_edges_overlap(u[0], v[0], u[1], v[1], switches, symmetries)){
           // Two selected edges are symmetrical
-          if(!swap_adjacency_1opt_s(u[0], u_d[0], switches, radix, s_degree, symmetries, adjacency))
-            goto swap_end;
+          enable_swap = swap_adjacency_1opt_s(u[0], u_d[0], switches, radix, s_degree, symmetries, adjacency);
         }
         else{
           if(get_random(2)){ // u[0]--v[1], v[0]--u[1]
-            if(IS_DIAMETER(u[0], v[1], switches, symmetries) || IS_DIAMETER(v[0], u[1], switches, symmetries))
-              goto swap_end;
-            else if(check_rotated_edges_overlap(u[0], v[1], v[0], u[1], switches, symmetries)){
-              goto swap_end;
+            if(IS_DIAMETER(u[0], v[1], switches, symmetries) || IS_DIAMETER(v[0], u[1], switches, symmetries)){
+              enable_swap = false;
             }
-            tmp[0] = LOCAL_INDEX(v[1], u[0], switches, symmetries);
-            tmp[1] = LOCAL_INDEX(v[0], u[1], switches, symmetries);
-            tmp[2] = LOCAL_INDEX(u[1], v[0], switches, symmetries);
-            tmp[3] = LOCAL_INDEX(u[0], v[1], switches, symmetries);
+            else if(check_rotated_edges_overlap(u[0], v[1], v[0], u[1], switches, symmetries)){
+              enable_swap = false;
+            }
+            else{
+              tmp[0] = LOCAL_INDEX(v[1], u[0], switches, symmetries);
+              tmp[1] = LOCAL_INDEX(v[0], u[1], switches, symmetries);
+              tmp[2] = LOCAL_INDEX(u[1], v[0], switches, symmetries);
+              tmp[3] = LOCAL_INDEX(u[0], v[1], switches, symmetries);
+            }
           }
           else{ // u[0]--u[1], v[0]--v[1]
-            if(IS_DIAMETER(u[0], u[1], switches, symmetries) || IS_DIAMETER(v[0], v[1], switches, symmetries))
-              goto swap_end;
-            else if(check_rotated_edges_overlap(u[0], u[1], v[0], v[1], switches, symmetries)){
-              goto swap_end;
+            if(IS_DIAMETER(u[0], u[1], switches, symmetries) || IS_DIAMETER(v[0], v[1], switches, symmetries)){
+              enable_swap = false;
             }
-            tmp[0] = LOCAL_INDEX(u[1], u[0], switches, symmetries);
-            tmp[1] = LOCAL_INDEX(u[0], u[1], switches, symmetries);
-            tmp[2] = LOCAL_INDEX(v[1], v[0], switches, symmetries);
-            tmp[3] = LOCAL_INDEX(v[0], v[1], switches, symmetries);
+            else if(check_rotated_edges_overlap(u[0], u[1], v[0], v[1], switches, symmetries)){
+              enable_swap = false;
+            }
+            else{
+              tmp[0] = LOCAL_INDEX(u[1], u[0], switches, symmetries);
+              tmp[1] = LOCAL_INDEX(u[0], u[1], switches, symmetries);
+              tmp[2] = LOCAL_INDEX(v[1], v[0], switches, symmetries);
+              tmp[3] = LOCAL_INDEX(v[0], v[1], switches, symmetries);
+            }
+          }
+          if(enable_swap){
+            adjacency[u[0]%based_switches][u_d[0]] = tmp[0];
+            adjacency[u[1]%based_switches][u_d[1]] = tmp[1];
+            adjacency[v[0]%based_switches][v_d[0]] = tmp[2];
+            adjacency[v[1]%based_switches][v_d[1]] = tmp[3];
+          }
+        }
+
+        if(enable_swap){
+          ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
+          i++;
+          
+          if(diameter < best_diameter || (diameter == best_diameter && ASPL < best_ASPL)){
+            best_diameter = diameter;
+            best_sum      = sum;
+            best_ASPL     = ASPL;
+            memcpy(best_adjacency, adjacency, sizeof(int) * based_switches * radix);
+            memcpy(best_h_degree,  h_degree,  sizeof(int) * based_switches);
+            memcpy(best_s_degree,  s_degree,  sizeof(int) * based_switches);
+            if(diameter == low_diameter && ASPL == low_ASPL){
+              printf("Find optimum solution\n");
+              break;
+            }
           }
 
-          adjacency[u[0]%based_switches][u_d[0]] = tmp[0];
-          adjacency[u[1]%based_switches][u_d[1]] = tmp[1];
-          adjacency[v[0]%based_switches][v_d[0]] = tmp[2];
-          adjacency[v[1]%based_switches][v_d[1]] = tmp[3];
-        }
-        
-        ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
-        i++;
-        
-        if(diameter < best_diameter || (diameter == best_diameter && ASPL < best_ASPL)){
-          best_diameter = diameter;
-          best_sum      = sum;
-          best_ASPL     = ASPL;
-          memcpy(best_adjacency, adjacency, sizeof(int) * based_switches * radix);
-          memcpy(best_h_degree,  h_degree,  sizeof(int) * based_switches);
-          memcpy(best_s_degree,  s_degree,  sizeof(int) * based_switches);
-          if(diameter == low_diameter && ASPL == low_ASPL){
-            printf("Find optimum solution\n");
-            break;
+          if(accept_s(switches, current_diameter, diameter, current_ASPL, ASPL, temp, ASPL_priority, symmetries)){
+            current_diameter = diameter;
+            current_ASPL     = ASPL;
           }
-        }
-        
-        if(accept_s(switches, current_diameter, diameter, current_ASPL, ASPL, temp, ASPL_priority, symmetries)){
-          current_diameter = diameter;
-          current_ASPL     = ASPL;
-        }
-        else{  // UNDO
-          adjacency[u[0]%based_switches][u_d[0]] = LOCAL_INDEX(v[0], u[0], switches, symmetries);
-          adjacency[u[1]%based_switches][u_d[1]] = LOCAL_INDEX(v[1], u[1], switches, symmetries);
-          adjacency[v[0]%based_switches][v_d[0]] = LOCAL_INDEX(u[0], v[0], switches, symmetries);
-          adjacency[v[1]%based_switches][v_d[1]] = LOCAL_INDEX(u[1], v[1], switches, symmetries);
+          else{  // UNDO
+            adjacency[u[0]%based_switches][u_d[0]] = LOCAL_INDEX(v[0], u[0], switches, symmetries);
+            adjacency[u[1]%based_switches][u_d[1]] = LOCAL_INDEX(v[1], u[1], switches, symmetries);
+            adjacency[v[0]%based_switches][v_d[0]] = LOCAL_INDEX(u[0], v[0], switches, symmetries);
+            adjacency[v[1]%based_switches][v_d[1]] = LOCAL_INDEX(u[1], v[1], switches, symmetries);
+          }
+          temp *= cooling_rate;
         }
       }
-      temp *= cooling_rate;
-swap_end:
     }
   }
+
   sa_time = get_time() - sa_time;
   ORP_Finalize_aspl();
   ORP_Conv_adjacency2edge_s(hosts, switches, radix, best_h_degree, best_s_degree, best_adjacency, symmetries, edge);
