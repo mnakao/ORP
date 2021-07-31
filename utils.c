@@ -332,12 +332,14 @@ void ORP_Set_host_degree_s(const int hosts, const int switches, const int lines,
     h_degree[i] = 0;
 
   for(int i=0;i<lines;i++){
-    if(IS_HOST(edge[i][0], hosts))
+    if(IS_HOST(edge[i][0], hosts)){
       if(edge[i][1]-hosts < based_switches)
         h_degree[edge[i][1]-hosts]++;
-    else if(IS_HOST(edge[i][1], hosts))
+    }
+    else if(IS_HOST(edge[i][1], hosts)){
       if(edge[i][0]-hosts < based_switches)
         h_degree[edge[i][0]-hosts]++;
+    }
   }
 }
 
