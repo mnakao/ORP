@@ -209,10 +209,12 @@ int main(int argc, char *argv[])
     double cooling_rate = pow(min_temp/max_temp, (double)1.0/ncalcs);
     double temp = max_temp;
     long interval = (ncalcs < 100)? 1 : ncalcs/100;
-    printf("Ncalcs : Temp : Diameter Gap : ASPL Gap\n");
+    printf("Ncalcs : Temp : current ASPL Gap ( Dia. ) : Best ASPL Gap ( Dia. )\n");
     for(long i=0;i<ncalcs;i++){
       if(i%interval == 0)
-	printf("%ld\t%f\t%d\t%f\n", i, temp, best_diameter-low_diameter, best_ASPL-low_ASPL);
+        printf("%ld\t%f\t%f ( %d )\t%f ( %d )\n", i, temp,
+               current_ASPL-low_ASPL, current_diameter-low_diameter,
+               best_ASPL-low_ASPL, best_diameter-low_diameter);
 
       if(assign_evenly || uniform_rand() > 0.5)
         ORP_Swap_adjacency_s(switches, radix, s_degree, symmetries, &r, adjacency);

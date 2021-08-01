@@ -324,10 +324,12 @@ int main(int argc, char *argv[])
     int u[2], v[2], u_d[2], v_d[2], tmp[4];
     long interval = (ncalcs < 100)? 1 : ncalcs/100;
     long i = 0, j = 0;
-    printf("Ncalcs : Temp : Diameter Gap : ASPL Gap\n");
+    printf("Ncalcs : Temp : current ASPL Gap ( Dia. ) : Best ASPL Gap ( Dia. )\n");
     while(i < ncalcs){
       if(i/interval == j){
-	printf("%ld\t%f\t%d\t%f\n", i, temp, best_diameter-low_diameter, best_ASPL-low_ASPL);
+        printf("%ld\t%f\t%f ( %d )\t%f ( %d )\n", i, temp,
+               current_ASPL-low_ASPL, current_diameter-low_diameter,
+               best_ASPL-low_ASPL, best_diameter-low_diameter);
         j++;
       }
 
