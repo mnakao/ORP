@@ -103,7 +103,7 @@ static double get_time()
 
 static void print_help(char *argv)
 {
-  fprintf(stderr, "%s [-H hosts] [-S switches] [-R radix] [-G symmetries] [-f input] [-o output] [-s seed] [-n calcs] [-w max_temp] [-c min_temp] [-A]\n", argv);
+  fprintf(stderr, "%s [-H hosts] [-S switches] [-R radix] [-G symmetries] [-f input] [-o output] [-s seed] [-n calcs] [-w max_temp] [-c min_temp] [-A] [-B]\n", argv);
   fprintf(stderr, "  -H : Number of hosts (Required when -f option is not specified)\n");
   fprintf(stderr, "  -S : Number of switches (Set automatically when -f and -S are not specified).\n");
   fprintf(stderr, "  -R : Radix (Required when -f is not specified)\n");
@@ -115,14 +115,15 @@ static void print_help(char *argv)
   fprintf(stderr, "  -w : Max temperature (Default: %.2f)\n", (double)DEFAULT_MAX_TEMP);
   fprintf(stderr, "  -c : Min temperature (Default: %.2f)\n", (double)DEFAULT_MIN_TEMP);
   fprintf(stderr, "  -A : ASPL takes precedence over Diameter\n");
+  fprintf(stderr, "  -B : Increase the bias in the number of hosts\n");
   exit(1);
 }
 
 static void set_args(const int argc, char **argv, int *hosts, int *switches, int *radix, int *symmetries, char **infname,
-                     char **outfname, int *seed, long *ncalcs, double *max_temp, double *min_temp, bool *ASPL_priority)
+                     char **outfname, int *seed, long *ncalcs, double *max_temp, double *min_temp, bool *ASPL_priority, bool *bias_of_hosts)
 {
   int result;
-  while((result = getopt(argc,argv,"H:S:R:G:f:o:s:n:w:c:A"))!=-1){
+  while((result = getopt(argc,argv,"H:S:R:G:f:o:s:n:w:c:AB"))!=-1){
     switch(result){
     case 'H':
       *hosts = atoi(optarg);
@@ -178,6 +179,9 @@ static void set_args(const int argc, char **argv, int *hosts, int *switches, int
       break;
     case 'A':
       *ASPL_priority = true;
+      break;
+    case 'B':
+      *bias_of_hosts = true;
       break;
     default:
       print_help(argv[0]);
@@ -246,7 +250,7 @@ static bool swap_adjacency_1opt_s(const int u, const int u_d, const int switches
 int main(int argc, char *argv[])
 {
   char *infname = NULL, *outfname = NULL;
-  bool ASPL_priority = false;
+  bool ASPL_priority = false, bias_of_hosts = false;
   int hosts = NOT_DEFINED, switches = NOT_DEFINED, radix = NOT_DEFINED, seed = DEFAULT_SEED;
   int symmetries = 1, based_switches = NOT_DEFINED;;
   int lines, diameter, current_diameter, best_diameter, low_diameter;
@@ -256,7 +260,7 @@ int main(int argc, char *argv[])
   ORP_Restore r;
 
   set_args(argc, argv, &hosts, &switches, &radix, &symmetries, &infname, &outfname, &seed,
-           &ncalcs, &max_temp, &min_temp, &ASPL_priority);
+           &ncalcs, &max_temp, &min_temp, &ASPL_priority, &bias_of_hosts);
   
   ORP_Srand(seed);
   if(infname){
@@ -330,7 +334,14 @@ int main(int argc, char *argv[])
       bool enable_swing = true, enable_swap = true;
       while(1){
         u[0] = get_random(switches);
-        u[1] = get_random(switches);
+        if(bias_of_hosts){
+          int t   = get_random(switches);
+          int t_d = get_random(s_degree[t%based_switches]);
+          u[1] =  GLOBAL_ADJ(switches, radix, symmetries, adjacency, t, t_d); // adjacency[t][t_d];
+        }
+        else{
+          u[1] = get_random(switches);
+        }
         if(u[0] == u[1] || s_degree[u[0]%based_switches] == 1) continue;
 
         u_d[0] = get_random(s_degree[u[0]%based_switches]);

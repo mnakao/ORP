@@ -52,7 +52,7 @@ static double get_time()
 
 static void print_help(char *argv)
 {
-  fprintf(stderr, "%s [-H hosts] [-S switches] [-R radix] [-f input] [-o output] [-s seed] [-n calcs] [-w max_temp] [-c min_temp] [-A]\n", argv);
+  fprintf(stderr, "%s [-H hosts] [-S switches] [-R radix] [-f input] [-o output] [-s seed] [-n calcs] [-w max_temp] [-c min_temp] [-A] [-B]\n", argv);
   fprintf(stderr, "  -H : Number of hosts (Required when -f option is not specified)\n");
   fprintf(stderr, "  -S : Number of switches (Set automatically when -f and -S are not specified).\n");
   fprintf(stderr, "  -R : Radix (Required when -f is not specified)\n");
@@ -63,14 +63,15 @@ static void print_help(char *argv)
   fprintf(stderr, "  -w : Max temperature (Default: %.2f)\n", (double)DEFAULT_MAX_TEMP);
   fprintf(stderr, "  -c : Min temperature (Default: %.2f)\n", (double)DEFAULT_MIN_TEMP);
   fprintf(stderr, "  -A : ASPL takes precedence over Diameter\n");
+  fprintf(stderr, "  -B : Increase the bias in the number of hosts\n");
   exit(1);
 }
 
 static void set_args(const int argc, char **argv, int *hosts, int *switches, int *radix, char **infname, char **outfname,
-		     int *seed, long *ncalcs, double *max_temp, double *min_temp, bool *ASPL_priority)
+		     int *seed, long *ncalcs, double *max_temp, double *min_temp, bool *ASPL_priority, bool *bias_of_hosts)
 {
   int result;
-  while((result = getopt(argc,argv,"H:S:R:f:o:s:n:w:c:A"))!=-1){
+  while((result = getopt(argc,argv,"H:S:R:f:o:s:n:w:c:AB"))!=-1){
     switch(result){
     case 'H':
       *hosts = atoi(optarg);
@@ -122,6 +123,9 @@ static void set_args(const int argc, char **argv, int *hosts, int *switches, int
     case 'A':
       *ASPL_priority = true;
       break;
+    case 'B':
+      *bias_of_hosts = true;
+      break;
     default:
       print_help(argv[0]);
     }
@@ -153,7 +157,7 @@ static int search_index(const int v, const int target, const int exclusion,
 int main(int argc, char *argv[])
 {
   char *infname = NULL, *outfname = NULL;
-  bool ASPL_priority = false;
+  bool ASPL_priority = false, bias_of_hosts = false;
   int hosts = NOT_DEFINED, switches = NOT_DEFINED, radix = NOT_DEFINED, seed = DEFAULT_SEED;
   int lines, diameter, current_diameter, best_diameter, low_diameter;
   int (*edge)[2], *h_degree, *s_degree;
@@ -161,7 +165,7 @@ int main(int argc, char *argv[])
   double max_temp = DEFAULT_MAX_TEMP, min_temp = DEFAULT_MIN_TEMP, ASPL, current_ASPL, best_ASPL, low_ASPL;
 
   set_args(argc, argv, &hosts, &switches, &radix, &infname, &outfname, &seed,
-           &ncalcs, &max_temp, &min_temp, &ASPL_priority);
+           &ncalcs, &max_temp, &min_temp, &ASPL_priority, &bias_of_hosts);
   
   ORP_Srand(seed);
   if(infname){
@@ -230,7 +234,13 @@ int main(int argc, char *argv[])
       int u[2], v[2], u_d[2], v_d[2];
       while(1){
         u[0] = get_random(switches);
-        u[1] = get_random(switches);
+        if(bias_of_hosts){
+          int t = get_random(switches);
+          u[1] = adjacency[t][get_random(s_degree[t])];
+        }
+        else{ 
+          u[1] = get_random(switches);
+        }
         if(u[0] == u[1] || s_degree[u[0]] == 1) continue;
 
         u_d[0] = get_random(s_degree[u[0]]);
@@ -344,7 +354,8 @@ int main(int argc, char *argv[])
   printf("ASPL Gap        = %.10f (%.10f - %.10f)\n", best_ASPL - low_ASPL, best_ASPL, low_ASPL);
   printf("Time            = %f sec.\n", sa_time);
   printf("ASPL priority?  = %s\n", (ASPL_priority)? "Yes" : "No");
-  printf("Verify?         = %s\n", (ORP_Verify_edge(hosts, switches, radix, lines, edge))? "Yes" : "No");
+  printf("Bias of hosts?  = %s\n", (bias_of_hosts)? "Yes" : "No");
+  //  printf("Verify?         = %s\n", (ORP_Verify_edge(hosts, switches, radix, lines, edge))? "Yes" : "No");
 
   if(outfname)
     ORP_Write_edge(hosts, switches, radix, lines, edge, outfname);
