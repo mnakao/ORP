@@ -1009,7 +1009,7 @@ void ORP_Restore_adjacency(const ORP_Restore r, const int radix, int *h_degree, 
 }
 
 static int search_index(const int v, const int target, const int exclusion, const int *s_degree,
-                        const int radix, const int switches, const int adjacency[switches][radix])
+                        const int radix, const int (*adjacency)[radix])
 {
   if(v == target){
     for(int i=0;i<s_degree[v];i++){
@@ -1056,25 +1056,65 @@ static int search_index_s(const int v, const int target, const int exclusion, co
   return -1; // dummy
 }
 
+static void set_random_edge(const int total_edges, const int switches, const int s_degree[switches], const int radix,
+                            const int (*adjacency)[radix], int *u, int *v, int *u_d, int *v_d)
+{
+  int r = get_random(total_edges);
+  *u = NOT_DEFINED;
+  for(int i=0;i<switches;i++){
+    r -= s_degree[i];
+    if(r < 0){
+      *u = i;
+      break;
+    }
+  }
+  if(*u == NOT_DEFINED) ERROR("Something Wrong (id=1)\n");
+
+  *u_d = get_random(s_degree[*u]);
+  *v   = adjacency[*u][*u_d];
+  *v_d = search_index(*v, *u, *u_d, s_degree, radix, adjacency);
+}
+
+static void set_random_edge_s(const int based_total_edges, const int switches, const int *s_degree, const int radix,
+                              const int (*adjacency)[radix], const int symmetries, int *u, int *v, int *u_d, int *v_d)
+{
+  int based_switches = switches/symmetries;
+  int r = get_random(based_total_edges);
+
+  *u = NOT_DEFINED;
+  for(int i=0;i<based_switches;i++){
+    r -= s_degree[i];
+    if(r < 0){
+      *u = i;
+      break;
+    }
+  }
+  if(*u == NOT_DEFINED) ERROR("Something Wrong (id=1)\n");
+
+  *u   = get_random(symmetries) * based_switches + (*u);
+  *u_d = get_random(s_degree[(*u)%based_switches]);
+  *v   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, *u, *u_d); // v = adjacency[u][u_d];
+  *v_d = search_index_s(*v, *u, *u_d, s_degree, radix, switches, adjacency, symmetries);
+}
+
 void ORP_Swing_adjacency(const int switches, const int radix, int h_degree[switches], int s_degree[switches],
                          ORP_Restore *r, int adjacency[switches][radix])
 {
   int u[2], v[2], u_d[2], v_d[2]; // u_d[1], v[1], and v_d[1] are not used because it is a host.
+  int total_edges = 0;
+  for(int i=0;i<switches;i++)
+    total_edges += s_degree[i];
 
   while(1){
     while(1){
-      u[0] = get_random(switches);
-      u[1] = get_random(switches);
+      set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[0], &v[0], &u_d[0], &v_d[0]);
+      set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[1], &v[1], &u_d[1], &v_d[1]);
       if(u[0] == u[1] || s_degree[u[0]] == 1 || h_degree[u[1]] == 0) continue;
-      
-      u_d[0] = get_random(s_degree[u[0]]);
-      v[0]   = adjacency[u[0]][u_d[0]];
       //      if(v[0] == u[1]) continue;
       break;
     }
   
     // search index
-    v_d[0] = search_index(v[0], u[0], u_d[0], s_degree, radix, switches, adjacency);
     if(!check_multiple_edges(v[0], v_d[0], u[1], switches, radix, s_degree, adjacency))
       continue;
 
@@ -1098,22 +1138,20 @@ void ORP_Swing_adjacency_s(const int switches, const int radix, const int symmet
   
   int u[2], v[2], u_d[2], v_d[2]; // u_d[1], v[1], and v_d[1] are not used because it is a host.
   int based_switches = switches/symmetries;
+  int based_total_edges = 0;
+  for(int i=0;i<based_switches;i++)
+    based_total_edges += s_degree[i];
   
   while(1){
     while(1){
-      u[0] = get_random(switches);
-      u[1] = get_random(switches);
+      set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[0], &v[0], &u_d[0], &v_d[0]);
+      set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[1], &v[1], &u_d[1], &v_d[1]);
       if(u[0] == u[1] || s_degree[u[0]%based_switches] == 1 || h_degree[u[1]%based_switches] == 0) continue;
-      
-      u_d[0] = get_random(s_degree[u[0]%based_switches]);
-      v[0]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[0], u_d[0]); // v[0] = adjacency[u[0]][u_d[0]];
       //      if(v[0] == u[1]) continue;
       break;
     }
-
     
     // search index
-    v_d[0] = search_index_s(v[0], u[0], u_d[0], s_degree, radix, switches, adjacency, symmetries);
     int tmp_u1 = LOCAL_INDEX(u[1], v[0], switches, symmetries);
     if(!check_multiple_edges_s(v[0]%based_switches, v_d[0], tmp_u1, switches, radix, s_degree, symmetries, adjacency))
       continue;
@@ -1150,27 +1188,20 @@ void ORP_Swap_adjacency(const int switches, const int radix, const int s_degree[
                         ORP_Restore *r, int adjacency[switches][radix])
 {
   int u[2], v[2], u_d[2], v_d[2];
+  int total_edges = 0;
+  for(int i=0;i<switches;i++)
+    total_edges += s_degree[i];
 
   while(1){
     while(1){
-      u[0] = get_random(switches);
-      u[1] = get_random(switches);
+      set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[0], &v[0], &u_d[0], &v_d[0]);
+      set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[1], &v[1], &u_d[1], &v_d[1]);
       if(u[0] == u[1]) continue;
-      
-      u_d[0] = get_random(s_degree[u[0]]);
-      v[0]   = adjacency[u[0]][u_d[0]];
       //      if(v[0] == u[1]) continue;
-      
-      u_d[1] = get_random(s_degree[u[1]]);
-      v[1]   = adjacency[u[1]][u_d[1]];
       if(/*v[1] == u[0] ||*/ v[0] == v[1]) continue;
       else if(v[0] == u[1] && v[1] == u[0]) continue;
       break;
     }
-    
-    // search index
-    v_d[0] = search_index(v[0], u[0], u_d[0], s_degree, radix, switches, adjacency);
-    v_d[1] = search_index(v[1], u[1], u_d[1], s_degree, radix, switches, adjacency);
     
     // backup for restore
     backup_restore(u, u_d, v, v_d, switches, OP_SWAP, r);
@@ -1240,28 +1271,21 @@ void ORP_Swap_adjacency_s(const int switches, const int radix, const int *s_degr
   CHECK_SWITCHS_S(switches, symmetries);
   
   int u[2], v[2], u_d[2], v_d[2], based_switches = switches/symmetries;
-
+  int based_total_edges = 0;
+  for(int i=0;i<based_switches;i++)
+    based_total_edges += s_degree[i];
+  
   while(1){
     while(1){
-      u[0] = get_random(switches);
-      u[1] = get_random(switches);
+      set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[0], &v[0], &u_d[0], &v_d[0]);
+      set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[1], &v[1], &u_d[1], &v_d[1]);
       if(u[0] == u[1]) continue;
-      
-      u_d[0] = get_random(s_degree[u[0]%based_switches]);
-      v[0]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[0], u_d[0]); // v[0] = adjacency[u[0]][u_d[0]];
       //      if(v[0] == u[1]) continue;
-      
-      u_d[1] = get_random(s_degree[u[1]%based_switches]);
-      v[1]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[1], u_d[1]); // v[1] = adjacency[u[1]][u_d[1]];
       if(/*v[1] == u[0] || */v[0] == v[1]) continue;
       else if(v[0] == u[1] && v[1] == u[0]) continue;
       break;
     }
 
-    // search index
-    v_d[0] = search_index_s(v[0], u[0], u_d[0], s_degree, radix, switches, adjacency, symmetries);
-    v_d[1] = search_index_s(v[1], u[1], u_d[1], s_degree, radix, switches, adjacency, symmetries);
-    
     // backup for restore
     backup_restore_s(u, u_d, v, v_d, switches, symmetries, OP_SWAP, r);
 

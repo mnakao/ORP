@@ -23,6 +23,66 @@ static double uniform_rand()
   return ((double)random()+1.0)/((double)RAND_MAX+2.0);
 }
 
+static int search_index(const int v, const int target, const int exclusion,
+                        const int *s_degree, const int radix, const int (*adjacency)[radix])
+{
+  if(v == target){
+    for(int i=0;i<s_degree[v];i++){
+      if(adjacency[v][i] == target && i != exclusion){
+        return i;
+      }
+    }
+  }
+  else{
+    for(int i=0;i<s_degree[v];i++){
+      if(adjacency[v][i] == target){
+        return i;
+      }
+    }
+  }
+
+  ERROR("Something Wrong (id=0)\n");
+  return -1; // dummy
+}
+
+static void set_random_edge(const int total_edges, const int switches, const int s_degree[switches], const int radix,
+                            const int (*adjacency)[radix], int *u, int *v, int *u_d, int *v_d)
+{
+  int r = get_random(total_edges);
+  *u = NOT_DEFINED;
+  for(int i=0;i<switches;i++){
+    r -= s_degree[i];
+    if(r < 0){
+      *u = i;
+      break;
+    }
+  }
+  if(*u == NOT_DEFINED) ERROR("Something Wrong (id=1)\n");
+  
+  *u_d = get_random(s_degree[*u]);
+  *v   = adjacency[*u][*u_d];
+  *v_d = search_index(*v, *u, *u_d, s_degree, radix, adjacency);
+}
+
+static void set_random_edge_bias(const int hosts, const int switches, const int h_degree[switches], const int s_degree[switches],
+                                 const int radix, const int (*adjacency)[radix], int *u, int *v, int *u_d, int *v_d)
+{
+  int r = get_random(hosts+switches);
+  *u = NOT_DEFINED;
+  for(int i=0;i<switches;i++){
+    r -= (h_degree[i] + 1);
+    if(r < 0){
+      *u = i;
+      break;
+    }
+  }
+  if(*u == NOT_DEFINED) ERROR("Something Wrong (id=2)\n");
+  
+  *u_d = get_random(s_degree[*u]);
+  *v   = adjacency[*u][*u_d];
+  *v_d = search_index(*v, *u, *u_d, s_degree, radix, adjacency);
+}
+
 bool accept(const int switches, const int current_diameter, const int diameter, const double current_ASPL,
             const double ASPL, const double temp, const bool ASPL_priority)
 {
@@ -68,7 +128,7 @@ static void print_help(char *argv)
 }
 
 static void set_args(const int argc, char **argv, int *hosts, int *switches, int *radix, char **infname, char **outfname,
-		     int *seed, long *ncalcs, double *max_temp, double *min_temp, bool *ASPL_priority, bool *bias_of_hosts)
+		     int *seed, long *ncalcs, double *max_temp, double *min_temp, bool *ASPL_priority, bool *bias_of_host)
 {
   int result;
   while((result = getopt(argc,argv,"H:S:R:f:o:s:n:w:c:AB"))!=-1){
@@ -124,7 +184,7 @@ static void set_args(const int argc, char **argv, int *hosts, int *switches, int
       *ASPL_priority = true;
       break;
     case 'B':
-      *bias_of_hosts = true;
+      *bias_of_host = true;
       break;
     default:
       print_help(argv[0]);
@@ -132,32 +192,10 @@ static void set_args(const int argc, char **argv, int *hosts, int *switches, int
   }
 }
 
-static int search_index(const int v, const int target, const int exclusion,
-                        const int *s_degree, const int radix, const int (*adjacency)[radix])
-{
-  if(v == target){
-    for(int i=0;i<s_degree[v];i++){
-      if(adjacency[v][i] == target && i != exclusion){
-        return i;
-      }
-    }
-  }
-  else{
-    for(int i=0;i<s_degree[v];i++){
-      if(adjacency[v][i] == target){
-        return i;
-      }
-    }
-  }
-
-  ERROR("Something Wrong (id=0)\n");
-  return -1; // dummy
-}
-
 int main(int argc, char *argv[])
 {
   char *infname = NULL, *outfname = NULL;
-  bool ASPL_priority = false, bias_of_hosts = false;
+  bool ASPL_priority = false, bias_of_host = false;
   int hosts = NOT_DEFINED, switches = NOT_DEFINED, radix = NOT_DEFINED, seed = DEFAULT_SEED;
   int lines, diameter, current_diameter, best_diameter, low_diameter;
   int (*edge)[2], *h_degree, *s_degree;
@@ -165,7 +203,7 @@ int main(int argc, char *argv[])
   double max_temp = DEFAULT_MAX_TEMP, min_temp = DEFAULT_MIN_TEMP, ASPL, current_ASPL, best_ASPL, low_ASPL;
 
   set_args(argc, argv, &hosts, &switches, &radix, &infname, &outfname, &seed,
-           &ncalcs, &max_temp, &min_temp, &ASPL_priority, &bias_of_hosts);
+           &ncalcs, &max_temp, &min_temp, &ASPL_priority, &bias_of_host);
   
   ORP_Srand(seed);
   if(infname){
@@ -221,6 +259,8 @@ int main(int argc, char *argv[])
   else{
     double cooling_rate = pow(min_temp/max_temp, (double)1.0/ncalcs);
     double temp = max_temp;
+    int total_edges = 0;
+    for(int i=0;i<switches;i++) total_edges += s_degree[i];
     long interval = (ncalcs < 100)? 1 : ncalcs/100;
     long j = 0;
     printf("Ncalcs : Temp : current ASPL Gap ( Dia. ) : Best ASPL Gap ( Dia. )\n");
@@ -235,22 +275,13 @@ int main(int argc, char *argv[])
       bool enable_swing = true;
       int u[2], v[2], u_d[2], v_d[2];
       while(1){
-        u[0] = get_random(switches);
-        if(bias_of_hosts){
-          int t = get_random(switches);
-          u[1] = adjacency[t][get_random(s_degree[t])];
-        }
-        else{ 
-          u[1] = get_random(switches);
-        }
+        if(bias_of_host)
+          set_random_edge_bias(hosts, switches, h_degree, s_degree, radix, adjacency, &u[0], &v[0], &u_d[0], &v_d[0]);
+        else
+          set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[0], &v[0], &u_d[0], &v_d[0]);
+        set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[1], &v[1], &u_d[1], &v_d[1]);
         if(u[0] == u[1] || s_degree[u[0]] == 1) continue;
-
-        u_d[0] = get_random(s_degree[u[0]]);
-        v[0]   = adjacency[u[0]][u_d[0]];
         //        if(v[0] == u[1]) continue;
-
-        u_d[1] = get_random(s_degree[u[1]]);
-        v[1]   = adjacency[u[1]][u_d[1]];
         if(/*v[1] == u[0] || */v[0] == v[1]) continue;
         else if(v[0] == u[1] && v[1] == u[0]) continue;
         else if(h_degree[u[0]] == 0 && h_degree[u[1]] == 0 && h_degree[v[0]] == 0 && h_degree[v[1]] == 0)
@@ -260,9 +291,6 @@ int main(int argc, char *argv[])
         break;
       }
       
-      v_d[0] = search_index(v[0], u[0], u_d[0], s_degree, radix, adjacency);
-      v_d[1] = search_index(v[1], u[1], u_d[1], s_degree, radix, adjacency);
-
       // SWING
       if(enable_swing){
         adjacency[v[0]][v_d[0]]           = u[1];
@@ -356,7 +384,6 @@ int main(int argc, char *argv[])
   printf("ASPL Gap        = %.10f (%.10f - %.10f)\n", best_ASPL - low_ASPL, best_ASPL, low_ASPL);
   printf("Time            = %f sec.\n", sa_time);
   printf("ASPL priority?  = %s\n", (ASPL_priority)? "Yes" : "No");
-  printf("Bias of hosts?  = %s\n", (bias_of_hosts)? "Yes" : "No");
   //  printf("Verify?         = %s\n", (ORP_Verify_edge(hosts, switches, radix, lines, edge))? "Yes" : "No");
 
   if(outfname)

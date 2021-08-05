@@ -37,8 +37,8 @@ static double continuous_moore_bound(const int hosts, const int switches, const 
 
 int main()
 {
-  int hosts = 65536, radix = 64;
-  
+  int hosts = 1024, radix = 5;
+
   int s = 3;
   double prev = DBL_MAX;
   while(1){
