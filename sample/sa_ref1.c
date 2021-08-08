@@ -64,6 +64,7 @@ static void set_random_edge(const int total_edges, const int switches, const int
   *v_d = search_index(*v, *u, *u_d, s_degree, radix, adjacency);
 }
 
+#if 0
 static void set_random_edge_bias(const int hosts, const int switches, const int h_degree[switches], const int s_degree[switches],
                                  const int radix, const int (*adjacency)[radix], int *u, int *v, int *u_d, int *v_d)
 {
@@ -82,6 +83,7 @@ static void set_random_edge_bias(const int hosts, const int switches, const int 
   *v   = adjacency[*u][*u_d];
   *v_d = search_index(*v, *u, *u_d, s_degree, radix, adjacency);
 }
+#endif
 
 bool accept(const int switches, const int current_diameter, const int diameter, const double current_ASPL,
             const double ASPL, const double temp, const bool ASPL_priority)
@@ -275,11 +277,16 @@ int main(int argc, char *argv[])
       bool enable_swing = true;
       int u[2], v[2], u_d[2], v_d[2];
       while(1){
-        if(bias_of_host)
-          set_random_edge_bias(hosts, switches, h_degree, s_degree, radix, adjacency, &u[0], &v[0], &u_d[0], &v_d[0]);
-        else
+        if(bias_of_host){
+          u[0] = get_random(switches);    u_d[0] = get_random(s_degree[u[0]]);
+          v[0] = adjacency[u[0]][u_d[0]]; v_d[0] = search_index(v[0], u[0], u_d[0], s_degree, radix, adjacency);
+          v[1] = get_random(switches);    v_d[1] = get_random(s_degree[v[1]]);
+          u[1] = adjacency[v[1]][v_d[1]]; u_d[1] = search_index(u[1], v[1], v_d[1], s_degree, radix, adjacency);
+        }
+        else{
           set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[0], &v[0], &u_d[0], &v_d[0]);
-        set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[1], &v[1], &u_d[1], &v_d[1]);
+          set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[1], &v[1], &u_d[1], &v_d[1]);
+        }
         if(u[0] == u[1] || s_degree[u[0]] == 1) continue;
         //        if(v[0] == u[1]) continue;
         if(/*v[1] == u[0] || */v[0] == v[1]) continue;

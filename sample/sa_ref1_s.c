@@ -106,6 +106,7 @@ static void set_random_edge_s(const int based_total_edges, const int switches, c
   *v_d = search_index_s(*v, *u, *u_d, s_degree, radix, switches, adjacency, symmetries);
 }
 
+#if 0
 static void set_random_edge_bias_s(const int based_hosts, const int switches, const int h_degree[switches], const int s_degree[switches],
                                    const int radix, const int (*adjacency)[radix], const int symmetries, int *u, int *v, int *u_d, int *v_d)
 {
@@ -127,6 +128,7 @@ static void set_random_edge_bias_s(const int based_hosts, const int switches, co
   *v   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, *u, *u_d); // v = adjacency[u][u_d];
   *v_d = search_index_s(*v, *u, *u_d, s_degree, radix, switches, adjacency, symmetries);
 }
+#endif
 
 static bool check_rotated_edges_overlap(const int u0, const int v0, const int u1, const int v1,
                                         const int switches, const int symmetries)
@@ -383,11 +385,21 @@ int main(int argc, char *argv[])
 
       bool enable_swing = true, enable_swap = true;
       while(1){
-        if(bias_of_host)
-          set_random_edge_bias_s(hosts/symmetries, switches, h_degree, s_degree, radix, adjacency, symmetries, &u[0], &v[0], &u_d[0], &v_d[0]);
-        else
+        if(bias_of_host){
+          u[0]   = get_random(switches);
+          u_d[0] = get_random(s_degree[u[0]%based_switches]);
+          v[0]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[0], u_d[0]); // v[0] = adjacency[u[0]][u_d[0]];
+          v_d[0] = search_index_s(v[0], u[0], u_d[0], s_degree, radix, switches, adjacency, symmetries);
+          //
+          v[1]   = get_random(switches);
+          v_d[1] = get_random(s_degree[v[1]%based_switches]);
+          u[1]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, v[1], v_d[1]); // u[1] = adjacency[v[1]][v_d[1]];
+          u_d[1] = search_index_s(u[1], v[1], v_d[1], s_degree, radix, switches, adjacency, symmetries);
+        }
+        else{
           set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[0], &v[0], &u_d[0], &v_d[0]);
-	set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[1], &v[1], &u_d[1], &v_d[1]);
+          set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[1], &v[1], &u_d[1], &v_d[1]);
+        }
         if(u[0] == u[1] || s_degree[u[0]%based_switches] == 1) continue;
         // if(v[0] == u[1]) continue;
         if(/*v[1] == u[0] || */v[0] == v[1]) continue;
