@@ -37,17 +37,14 @@ int main(int argc, char *argv[])
   printf("--\n");
   
   int *hist = malloc((radix+1) * sizeof(int));
-  for(int i=0;i<radix+1;i++)
-    hist[i] = 0;
-
-  for(int i=0;i<switches;i++)
-    hist[s_degree[i]]++;
+  for(int i=0;i<radix+1;i++)  hist[i] = 0;
+  for(int i=0;i<switches;i++) hist[s_degree[i]]++;
 
   int s = 0;
-  printf("#Switches connected to switches : num\n");
+  printf("#Num : connected to switches\n");
   for(int i=1;i<radix+1;i++){
     s += hist[i];
-    printf("%d %d\n", i, hist[i]);
+    printf("%d : %d\n", i, hist[i]);
   }
   printf("---\n");
   printf("SUM : %d\n", s);
