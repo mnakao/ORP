@@ -85,7 +85,7 @@ static void set_random_edge_bias(const int hosts, const int switches, const int 
 }
 #endif
 
-bool accept(const int switches, const int current_diameter, const int diameter, const double current_ASPL,
+bool accept(const int hosts, const int switches, const int current_diameter, const int diameter, const double current_ASPL,
             const double ASPL, const double temp, const bool ASPL_priority)
 {
   if(diameter < current_diameter && !ASPL_priority){
@@ -99,7 +99,7 @@ bool accept(const int switches, const int current_diameter, const int diameter, 
       return true;
     }
     else{
-      double diff = ((current_ASPL-ASPL)*switches*switches);
+      double diff = ((current_ASPL-ASPL)*switches*hosts);
       return (exp(diff/temp) > uniform_rand());
     }
   }
@@ -322,7 +322,7 @@ int main(int argc, char *argv[])
         }
       }
       
-      if(enable_swing && accept(switches, current_diameter, diameter, current_ASPL, ASPL, temp, ASPL_priority)){
+      if(enable_swing && accept(hosts, switches, current_diameter, diameter, current_ASPL, ASPL, temp, ASPL_priority)){
 	current_diameter = diameter;
 	current_ASPL     = ASPL;
       }
@@ -366,7 +366,7 @@ int main(int argc, char *argv[])
           }
         }
         
-        if(accept(switches, current_diameter, diameter, current_ASPL, ASPL, temp, ASPL_priority)){
+        if(accept(hosts, switches, current_diameter, diameter, current_ASPL, ASPL, temp, ASPL_priority)){
           current_diameter = diameter;
           current_ASPL     = ASPL;
         }

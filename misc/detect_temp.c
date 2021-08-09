@@ -15,7 +15,7 @@ static double uniform_rand()
   return ((double)random()+1.0)/((double)RAND_MAX+2.0);
 }
 
-bool accept(const int switches, const int current_diameter, const int diameter, const double current_ASPL,
+bool accept(const int hosts, const int switches, const int current_diameter, const int diameter, const double current_ASPL,
             const double ASPL, double *max_diff_energy)
 {
   if(diameter < current_diameter){
@@ -26,7 +26,7 @@ bool accept(const int switches, const int current_diameter, const int diameter, 
   }
 
   //  diameter == current_diameter
-  double diff = (current_ASPL-ASPL)*switches*switches;
+  double diff = (current_ASPL-ASPL)*switches*hosts;
   *max_diff_energy = MAX(*max_diff_energy, -1.0 * diff);
     
   return (ASPL <= current_ASPL);
@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
       
       ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
       
-      if(accept(switches, current_diameter, diameter, current_ASPL, ASPL, &max_diff_energy)){
+      if(accept(hosts, switches, current_diameter, diameter, current_ASPL, ASPL, &max_diff_energy)){
 	current_diameter = diameter;
 	current_ASPL     = ASPL;
       }
