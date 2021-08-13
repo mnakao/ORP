@@ -1,4 +1,5 @@
 #include "common.h"
+static int _enable_bias = NOT_DEFINED;
 #ifdef _OPENMP
 static int *_local_frontier;
 #pragma omp threadprivate(_local_frontier)
@@ -19,6 +20,17 @@ void ORP_free_local_frontier()
   }
 }
 #endif
+
+static void CHECK_BIAS()
+{
+  if(_enable_bias != NOT_DEFINED) return;
+
+  char *val = getenv("ORP_BIAS");
+  if(val)
+    _enable_bias = (atoi(val) == 1);
+  else
+    _enable_bias = false;
+}
 
 static bool IS_DIAMETER(const int u, const int v, const int switches, const int symmetries)
 {
@@ -1100,6 +1112,8 @@ static void set_random_edge_s(const int based_total_edges, const int switches, c
 void ORP_Swing_adjacency(const int switches, const int radix, int h_degree[switches], int s_degree[switches],
                          ORP_Restore *r, int adjacency[switches][radix])
 {
+  CHECK_BIAS();
+  
   int u[2], v[2], u_d[2], v_d[2]; // u_d[1], v[1], and v_d[1] are not used because it is a host.
   int total_edges = 0;
   for(int i=0;i<switches;i++)
@@ -1107,8 +1121,16 @@ void ORP_Swing_adjacency(const int switches, const int radix, int h_degree[switc
 
   while(1){
     while(1){
-      set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[0], &v[0], &u_d[0], &v_d[0]);
-      set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[1], &v[1], &u_d[1], &v_d[1]);
+      if(_enable_bias){
+        u[0] = get_random(switches);    u_d[0] = get_random(s_degree[u[0]]);
+        v[0] = adjacency[u[0]][u_d[0]]; v_d[0] = search_index(v[0], u[0], u_d[0], s_degree, radix, adjacency);
+        v[1] = get_random(switches);    v_d[1] = get_random(s_degree[v[1]]);
+        u[1] = adjacency[v[1]][v_d[1]]; u_d[1] = search_index(u[1], v[1], v_d[1], s_degree, radix, adjacency);
+      }
+      else{
+        set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[0], &v[0], &u_d[0], &v_d[0]);
+        set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[1], &v[1], &u_d[1], &v_d[1]);
+      }
       if(u[0] == u[1] || s_degree[u[0]] == 1 || h_degree[u[1]] == 0) continue;
       //      if(v[0] == u[1]) continue;
       break;
@@ -1135,6 +1157,7 @@ void ORP_Swing_adjacency_s(const int switches, const int radix, const int symmet
                            int s_degree[switches], ORP_Restore *r, int adjacency[switches][radix])
 {
   CHECK_SWITCHS_S(switches, symmetries);
+  CHECK_BIAS();
   
   int u[2], v[2], u_d[2], v_d[2]; // u_d[1], v[1], and v_d[1] are not used because it is a host.
   int based_switches = switches/symmetries;
@@ -1144,8 +1167,20 @@ void ORP_Swing_adjacency_s(const int switches, const int radix, const int symmet
   
   while(1){
     while(1){
-      set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[0], &v[0], &u_d[0], &v_d[0]);
-      set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[1], &v[1], &u_d[1], &v_d[1]);
+      if(_enable_bias){
+        u[0]   = get_random(switches);
+        u_d[0] = get_random(s_degree[u[0]%based_switches]);
+        v[0]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[0], u_d[0]); // v[0] = adjacency[u[0]][u_d[0]];
+        v_d[0] = search_index_s(v[0], u[0], u_d[0], s_degree, radix, switches, adjacency, symmetries);
+        v[1]   = get_random(switches);
+        v_d[1] = get_random(s_degree[v[1]%based_switches]);
+        u[1]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, v[1], v_d[1]); // u[1] = adjacency[v[1]][v_d[1]];
+        u_d[1] = search_index_s(u[1], v[1], v_d[1], s_degree, radix, switches, adjacency, symmetries);
+      }
+      else{
+        set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[0], &v[0], &u_d[0], &v_d[0]);
+        set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[1], &v[1], &u_d[1], &v_d[1]);
+      }
       if(u[0] == u[1] || s_degree[u[0]%based_switches] == 1 || h_degree[u[1]%based_switches] == 0) continue;
       //      if(v[0] == u[1]) continue;
       break;
