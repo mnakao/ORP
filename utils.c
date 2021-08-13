@@ -731,7 +731,7 @@ static void matmul_avx2_s(const uint64_t *restrict A, uint64_t *restrict B, cons
     int p = i/based_switches;
     int m = i - p * based_switches;
     for(int j=0;j<s_degree[m];j++){
-      int n = *(adjacency + m * degree + j) + p * based_switches;
+      int n = *(adjacency + m * radix + j) + p * based_switches;
       if(n >= switches) n -= switches;
       __m256i *a = (__m256i *)(A + n*elements);
       for(int k=0;k<quarter_elements;k++){
