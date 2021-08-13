@@ -151,6 +151,10 @@ The meaning of each item in the profile is as follows.
 * Memory Usage : Estimated ammount of memory used in the library.
 * Num of Threads : Number of threads used in the library.
 
+### ORP_BIAS=1
+
+Make it easier to move a host from a switch with few hosts to a switch with many hosts in SWING operation.
+
 ## Basic Function
 ### Overview
 Basic function calculates ASPL and diameter of a graph.
