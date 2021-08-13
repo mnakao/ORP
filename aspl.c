@@ -197,6 +197,7 @@ static void aspl_bfs(const int* restrict h_degree, const int* restrict s_degree,
   *diameter = 0;
   *sum      = 0;
   for(int s=0;s<_switches;s++){
+    bool flag = true;
     if(h_degree[s] == 0) continue;
     
     int num_frontier = 1, level = 0;
@@ -218,7 +219,8 @@ static void aspl_bfs(const int* restrict h_degree, const int* restrict s_degree,
 
     *diameter = MAX(*diameter, level-1);
 
-    if(s == 0){
+    if(flag){
+      flag = false;
       for(int i=1;i<_switches;i++){
         if(_distance[i] == NOT_USED){
           *diameter = INT_MAX;
@@ -244,6 +246,7 @@ static void aspl_bfs_s(const int* restrict h_degree, const int* restrict s_degre
   *diameter = 0;
   *sum      = 0;
   for(int s=0;s<_based_switches;s++){
+    bool flag =	true;
     if(h_degree[s] == 0) continue;
 
     int num_frontier = 1, level = 0;
@@ -265,7 +268,8 @@ static void aspl_bfs_s(const int* restrict h_degree, const int* restrict s_degre
 
     *diameter = MAX(*diameter, level-1);
 
-    if(s == 0){
+    if(flag){
+      flag = false;
       for(int i=1;i<_switches;i++){
         if(_distance[i] == NOT_USED){
           *diameter = INT_MAX;
