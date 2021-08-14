@@ -27,9 +27,9 @@ static bool accept_s(const int hosts, const int switches, const int current_diam
   return (ASPL <= current_ASPL);
 }
 
-double calc_min_temp_s(const int hosts, const int switches, const int radix, const int seed, const int symmetries)
+double calc_min_temp_s(const int hosts, const int switches)
 {
-  return (-2.0) / log(0.0001);
+  return (-2.0 * hosts / switches) / log(0.0001);
 }
 
 double calc_max_temp_s(const int hosts, const int switches, const int radix, const int seed, const int symmetries)

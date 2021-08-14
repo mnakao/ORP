@@ -11,7 +11,7 @@
 #define DEFAULT_SEED 0
 #define DEFAULT_NCALCS 10000
 extern double calc_max_temp_s(const int hosts, const int switches, const int radix, const int seed, const int symmetries);
-extern double calc_min_temp_s(const int hosts, const int switches, const int radix, const int seed, const int symmetries);
+extern double calc_min_temp_s(const int hosts, const int switches);
 
 static double uniform_rand()
 {
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
     max_temp = calc_max_temp_s(hosts, switches, radix, seed, symmetries);
   
   if(min_temp == NOT_DEFINED)
-    min_temp = calc_min_temp_s(hosts, switches, radix, seed, symmetries);
+    min_temp = calc_min_temp_s(hosts, switches);
   
   printf("Hosts = %d, Switches = %d, Radix = %d, Symmetries = %d\n", hosts, switches, radix, symmetries);
   printf("Random seed = %d\n", seed);
