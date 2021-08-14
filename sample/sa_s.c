@@ -10,8 +10,8 @@
 #define NOT_DEFINED -1
 #define DEFAULT_SEED 0
 #define DEFAULT_NCALCS 10000
-#define DEFAULT_MAX_TEMP 100.00
-#define DEFAULT_MIN_TEMP 0.22
+extern double calc_max_temp_s(const int hosts, const int switches, const int radix, const int seed, const int symmetries);
+extern double calc_min_temp_s(const int hosts, const int switches, const int radix, const int seed, const int symmetries);
 
 static double uniform_rand()
 {
@@ -56,8 +56,8 @@ static void print_help(char *argv)
   fprintf(stderr, "  -o : Output file\n");
   fprintf(stderr, "  -s : Random seed (Default: %d)\n", DEFAULT_SEED);
   fprintf(stderr, "  -n : Number of calculations (Default: %d)\n", DEFAULT_NCALCS);
-  fprintf(stderr, "  -w : Max temperature (Default: %.2f)\n", (double)DEFAULT_MAX_TEMP);
-  fprintf(stderr, "  -c : Min temperature (Default: %.2f)\n", (double)DEFAULT_MIN_TEMP);
+  fprintf(stderr, "  -w : Max temperature\n");
+  fprintf(stderr, "  -c : Min temperature\n");
   fprintf(stderr, "  -A : ASPL takes precedence over Diameter\n");
   fprintf(stderr, "  -E : Assign hosts evenly to switches\n");
   exit(1);
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
   int lines, diameter, current_diameter, best_diameter, low_diameter;
   int (*edge)[2], *h_degree, *s_degree;
   long sum, best_sum, ncalcs = DEFAULT_NCALCS;
-  double max_temp = DEFAULT_MAX_TEMP, min_temp = DEFAULT_MIN_TEMP, ASPL, current_ASPL, best_ASPL, low_ASPL;
+  double max_temp = NOT_DEFINED, min_temp = NOT_DEFINED, ASPL, current_ASPL, best_ASPL, low_ASPL;
   ORP_Restore r;
 
   set_args(argc, argv, &hosts, &switches, &radix, &symmetries, &infname, &outfname, &seed,
@@ -168,12 +168,18 @@ int main(int argc, char *argv[])
       switches = ORP_Optimize_switches(hosts, radix);
 
     if(hosts%symmetries != 0 || switches%symmetries != 0)
-      ERROR("hosts and switches must be even numbers\n ");
+      ERROR("hosts and switches must be divisible by symmetries\n ");
     based_switches = switches/symmetries;
     h_degree = malloc(sizeof(int) * based_switches);
     s_degree = malloc(sizeof(int) * based_switches);
     edge     = ORP_Generate_random_s(hosts, switches, radix, assign_evenly, symmetries, &lines, h_degree, s_degree);
   }
+
+  if(max_temp == NOT_DEFINED)
+    max_temp = calc_max_temp_s(hosts, switches, radix, seed, symmetries);
+  
+  if(min_temp == NOT_DEFINED)
+    min_temp = calc_min_temp_s(hosts, switches, radix, seed, symmetries);
   
   printf("Hosts = %d, Switches = %d, Radix = %d, Symmetries = %d\n", hosts, switches, radix, symmetries);
   printf("Random seed = %d\n", seed);

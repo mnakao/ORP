@@ -27,14 +27,18 @@ random.x: random.c ../liborp.a ../include/orp.h
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 random_s.x: random_s.c ../liborp.a ../include/orp.h
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
-sa.x: sa.c ../liborp.a ../include/orp.h
-	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
-sa_s.x: sa_s.c ../liborp.a ../include/orp.h
-	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
-sa_ref1.x: sa_ref1.c ../liborp.a ../include/orp.h
-	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
-sa_ref1_s.x: sa_ref1_s.c ../liborp.a ../include/orp.h
-	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
+sa.x: sa.c ../liborp.a detect_temp.o ../include/orp.h
+	$(CC) $(CFLAGS) -o $@ detect_temp.o $< $(LIBS)
+sa_s.x: sa_s.c detect_temp_s.o ../liborp.a ../include/orp.h
+	$(CC) $(CFLAGS) -o $@ detect_temp_s.o $< $(LIBS)
+detect_temp.o: detect_temp.c ../include/orp.h
+	$(CC) $(CFLAGS) -o $@ $< -c
+detect_temp_s.o: detect_temp_s.c ../include/orp.h
+	$(CC) $(CFLAGS) -o $@ $< -c
+sa_ref1.x: sa_ref1.c detect_temp.o ../liborp.a ../include/orp.h
+	$(CC) $(CFLAGS) -o $@ detect_temp.o $< $(LIBS)
+sa_ref1_s.x: sa_ref1_s.c detect_temp_s.o ../liborp.a ../include/orp.h
+	$(CC) $(CFLAGS) -o $@ detect_temp_s.o $< $(LIBS)
 hc.x: hc.c ../liborp.a ../include/orp.h
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 threads_simple.x: simple.c ../liborp_threads.a ../include/orp.h

@@ -10,8 +10,8 @@
 #define NOT_DEFINED -1
 #define DEFAULT_SEED 0
 #define DEFAULT_NCALCS 10000
-#define DEFAULT_MAX_TEMP 100.00
-#define DEFAULT_MIN_TEMP 0.22
+extern double calc_max_temp(const int hosts, const int switches, const int radix, const int seed);
+extern double calc_min_temp(const int hosts, const int switches, const int radix, const int seed);
 
 static int get_random(const int max)
 {
@@ -122,8 +122,8 @@ static void print_help(char *argv)
   fprintf(stderr, "  -o : Output file\n");
   fprintf(stderr, "  -s : Random seed (Default: %d)\n", DEFAULT_SEED);
   fprintf(stderr, "  -n : Number of calculations (Default: %d)\n", DEFAULT_NCALCS);
-  fprintf(stderr, "  -w : Max temperature (Default: %.2f)\n", (double)DEFAULT_MAX_TEMP);
-  fprintf(stderr, "  -c : Min temperature (Default: %.2f)\n", (double)DEFAULT_MIN_TEMP);
+  fprintf(stderr, "  -w : Max temperature\n");
+  fprintf(stderr, "  -c : Min temperature\n");
   fprintf(stderr, "  -A : ASPL takes precedence over Diameter\n");
   fprintf(stderr, "  -B : Increase the bias in the number of hosts\n");
   exit(1);
@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
   int lines, diameter, current_diameter, best_diameter, low_diameter;
   int (*edge)[2], *h_degree, *s_degree;
   long sum, best_sum, ncalcs = DEFAULT_NCALCS;
-  double max_temp = DEFAULT_MAX_TEMP, min_temp = DEFAULT_MIN_TEMP, ASPL, current_ASPL, best_ASPL, low_ASPL;
+  double max_temp = NOT_DEFINED, min_temp = NOT_DEFINED, ASPL, current_ASPL, best_ASPL, low_ASPL;
 
   set_args(argc, argv, &hosts, &switches, &radix, &infname, &outfname, &seed,
            &ncalcs, &max_temp, &min_temp, &ASPL_priority, &bias_of_host);
@@ -227,6 +227,12 @@ int main(int argc, char *argv[])
     s_degree = malloc(sizeof(int) * switches);
     edge     = ORP_Generate_random(hosts, switches, radix, false, &lines, h_degree, s_degree);
   }
+
+  if(max_temp == NOT_DEFINED)
+    max_temp = calc_max_temp(hosts, switches, radix, seed);
+  
+  if(min_temp == NOT_DEFINED)
+    min_temp = calc_min_temp(hosts, switches, radix, seed);
     
   printf("Hosts = %d, Switches = %d, Radix = %d\n", hosts, switches, radix);
   printf("Random seed = %d\n", seed);
@@ -391,6 +397,7 @@ int main(int argc, char *argv[])
   printf("ASPL Gap        = %.10f (%.10f - %.10f)\n", best_ASPL - low_ASPL, best_ASPL, low_ASPL);
   printf("Time            = %f sec.\n", sa_time);
   printf("ASPL priority?  = %s\n", (ASPL_priority)? "Yes" : "No");
+  printf("Bias of hosts?  = %s\n", (bias_of_host)? "Yes" : "No");
   //  printf("Verify?         = %s\n", (ORP_Verify_edge(hosts, switches, radix, lines, edge))? "Yes" : "No");
 
   if(outfname)
