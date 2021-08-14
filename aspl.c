@@ -1,4 +1,4 @@
- #include "common.h"
+#include "common.h"
 static bool _enable_avx2 = false, _is_profile = false;
 static char* _bitmap = NULL;
 static int _hosts, _switches, _based_switches, _radix, _symmetries, _kind, _elements, _times;
@@ -46,9 +46,8 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
   for(int i=0;i<_switches*_elements;i++)
     _A[i] = _B[i] = 0;
   
-  long k = 0, stop_k = ((long)_switches*_switches-_switches)/2;
-  long local_sum = 0, pre_local_sum = 0;
-  
+  long k = 0, stop_k = ((long)_switches*_switches-_switches)/2, local_sum = 0;
+
 #pragma omp parallel for
   for(int i=0;i<_switches;i++){
     unsigned int offset = i*_elements+i/UINT64_BITS;
@@ -65,14 +64,22 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
     for(int i=0;i<_switches;i++){
       for(int j=i+1;j<_switches;j++){
         int ii = i*_switches+j;
-        if(_bitmap[ii] == NOT_VISITED && (_B[i*_elements+(j/UINT64_BITS)] & (0x1ULL<<(j%UINT64_BITS)))){
-          _bitmap[ii] = VISITED;
-          local_sum += level * h_degree[i] * h_degree[j];
-          k++;
+        if(_bitmap[ii] == NOT_VISITED){
+          if(_B[i*_elements+(j/UINT64_BITS)] & (0x1ULL<<(j%UINT64_BITS))){
+            _bitmap[ii] = VISITED;
+            k++;
+            if(h_degree[i] != 0 && h_degree[j] != 0){
+              *diameter = MAX(*diameter, level-2);
+              local_sum += level * h_degree[i] * h_degree[j];
+            }
+          }
+          else if(h_degree[i] == 0 || h_degree[j] == 0){
+            _bitmap[ii] = VISITED;
+            k++;
+          }
         }
       }
     }
-
     if(k == stop_k) break;
 
     // swap A <-> B
@@ -80,10 +87,6 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
     _A = _B;
     _B = tmp;
 
-    if(pre_local_sum != local_sum){
-      (*diameter) += 1;
-      pre_local_sum = local_sum;
-    }
     if(kk == _switches-1)
       (*diameter) = _switches;
   }
@@ -108,8 +111,7 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
   for(int i=0;i<_switches*_elements;i++)
     _A[i] = _B[i] = 0;
 
-  long k = 0, stop_k = (long)_switches*_based_switches-_based_switches;
-  long local_sum = 0, pre_local_sum = 0;
+  long k = 0, stop_k = (long)_switches*_based_switches-_based_switches, local_sum = 0;
 #pragma omp parallel for
   for(int i=0;i<_based_switches;i++){
     unsigned int offset = i*_elements+i/UINT64_BITS;
@@ -127,25 +129,30 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
       for(int j=0;j<_based_switches;j++){
         if(i != j){
           int ii = i*_based_switches+j;
-          if(_bitmap[ii] == NOT_VISITED && (_B[i*_elements+(j/UINT64_BITS)] & (0x1ULL<<(j%UINT64_BITS)))){
-            _bitmap[ii] = VISITED;
-            local_sum += level * h_degree[i%_based_switches] * h_degree[j];
-            k++;
+          if(_bitmap[ii] == NOT_VISITED){
+            if(_B[i*_elements+(j/UINT64_BITS)] & (0x1ULL<<(j%UINT64_BITS))){
+              _bitmap[ii] = VISITED;
+              k++;
+              if(h_degree[i%_based_switches] != 0 && h_degree[j] != 0){
+                *diameter = MAX(*diameter, level-2);
+                local_sum += level * h_degree[i%_based_switches] * h_degree[j];
+              }
+            }
+            else if(h_degree[i%_based_switches] == 0 || h_degree[j] == 0){
+              _bitmap[ii] = VISITED;
+              k++;
+            }
           }
         }
       }
     }
+
     if(k == stop_k) break;
 
     // swap A <-> B
     uint64_t* tmp = _A;
     _A = _B;
     _B = tmp;
-
-    if(pre_local_sum != local_sum){
-      (*diameter) += 1;
-      pre_local_sum = local_sum;
-    }
 
     if(kk == _switches-1)
       (*diameter) = _switches;
@@ -215,7 +222,7 @@ static void aspl_bfs(const int* restrict h_degree, const int* restrict s_degree,
     bool flag = true;
     if(h_degree[s] == 0) continue;
     
-    int num_frontier = 1, level = 0;
+    int num_frontier = 1, level = 1;
     for(int i=0;i<_switches;i++)
       _distance[i] = NOT_USED;
     
@@ -232,20 +239,22 @@ static void aspl_bfs(const int* restrict h_degree, const int* restrict s_degree,
       _next     = tmp;
     }
 
-    *diameter = MAX(*diameter, level-1);
-
     if(flag){
       flag = false;
       for(int i=1;i<_switches;i++){
-        if(_distance[i] == NOT_USED){
+        if(_distance[i] == NOT_USED && h_degree[i] != 0){
           *diameter = INT_MAX;
           return;
         }
       }
     }
 
-    for(int i=s+1;i<_switches;i++)
-      *sum += (long)(_distance[i] + 3) * h_degree[i] * h_degree[s];
+    for(int i=s+1;i<_switches;i++){
+      if(h_degree[i] != 0){
+        *sum += (long)(_distance[i] + 2) * h_degree[i] * h_degree[s];
+        *diameter = MAX(*diameter, _distance[i]);
+      }
+    }
   }
 
   for(int s=0;s<_switches;s++)
@@ -264,7 +273,7 @@ static void aspl_bfs_s(const int* restrict h_degree, const int* restrict s_degre
     bool flag =	true;
     if(h_degree[s] == 0) continue;
 
-    int num_frontier = 1, level = 0;
+    int num_frontier = 1, level = 1;
     for(int i=0;i<_switches;i++)
       _distance[i] = NOT_USED;
 
@@ -281,14 +290,15 @@ static void aspl_bfs_s(const int* restrict h_degree, const int* restrict s_degre
       _next     = tmp;
     }
 
-    *diameter = MAX(*diameter, level-1);
+    for(int i=s+1;i<_switches;i++)
+      if(h_degree[i%_based_switches] != 0)
+        *diameter = MAX(*diameter, _distance[i]);
 
     if(flag){
       flag = false;
       for(int i=1;i<_switches;i++){
-        if(_distance[i] == NOT_USED){
+        if(_distance[i] == NOT_USED && h_degree[i%_based_switches] != 0){
           *diameter = INT_MAX;
-          exit(0);
           return;
         }
       }
@@ -296,7 +306,7 @@ static void aspl_bfs_s(const int* restrict h_degree, const int* restrict s_degre
 
     for(int i=0;i<_switches;i++)
       if(i!=s)
-        *sum += (long)(_distance[i] + 3) * h_degree[i%_based_switches] * h_degree[s];
+        *sum += (long)(_distance[i] + 2) * h_degree[i%_based_switches] * h_degree[s];
   }
   
   *sum = *sum * _symmetries / 2;
