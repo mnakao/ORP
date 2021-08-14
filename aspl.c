@@ -72,7 +72,7 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
         }
       }
     }
-    
+
     if(k == stop_k) break;
 
     // swap A <-> B
@@ -84,6 +84,8 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
       (*diameter) += 1;
       pre_local_sum = local_sum;
     }
+    if(kk == _switches-1)
+      (*diameter) = _switches;
   }
 
 #pragma omp parallel for reduction(+:local_sum)
@@ -144,6 +146,9 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
       (*diameter) += 1;
       pre_local_sum = local_sum;
     }
+
+    if(kk == _switches-1)
+      (*diameter) = _switches;
   }
   
   local_sum = local_sum * _symmetries / 2;
