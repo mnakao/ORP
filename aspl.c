@@ -46,7 +46,9 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
   for(int i=0;i<_switches*_elements;i++)
     _A[i] = _B[i] = 0;
   
-  long k = 0, stop_k = ((long)_switches*_switches-_switches)/2, local_sum = 0;
+  long k = 0, stop_k = ((long)_switches*_switches-_switches)/2;
+  long local_sum = 0, pre_local_sum = 0;
+  
 #pragma omp parallel for
   for(int i=0;i<_switches;i++){
     unsigned int offset = i*_elements+i/UINT64_BITS;
@@ -70,6 +72,7 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
         }
       }
     }
+    
     if(k == stop_k) break;
 
     // swap A <-> B
@@ -77,7 +80,10 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
     _A = _B;
     _B = tmp;
 
-    (*diameter) += 1;
+    if(local_sum != pre_local_sum)
+      (*diameter) += 1;
+    
+    pre_local_sum = local_sum;
   }
 
 #pragma omp parallel for reduction(+:local_sum)
@@ -100,7 +106,8 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
   for(int i=0;i<_switches*_elements;i++)
     _A[i] = _B[i] = 0;
 
-  long k = 0, stop_k = (long)_switches*_based_switches-_based_switches, local_sum = 0;
+  long k = 0, stop_k = (long)_switches*_based_switches-_based_switches;
+  long local_sum = 0, pre_local_sum = 0;
 #pragma omp parallel for
   for(int i=0;i<_based_switches;i++){
     unsigned int offset = i*_elements+i/UINT64_BITS;
@@ -133,7 +140,10 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
     _A = _B;
     _B = tmp;
 
-    (*diameter) += 1;
+    if(local_sum != pre_local_sum)
+      (*diameter) += 1;
+
+    pre_local_sum = local_sum;
   }
   
   local_sum = local_sum * _symmetries / 2;
@@ -273,6 +283,7 @@ static void aspl_bfs_s(const int* restrict h_degree, const int* restrict s_degre
       for(int i=1;i<_switches;i++){
         if(_distance[i] == NOT_USED){
           *diameter = INT_MAX;
+          exit(0);
           return;
         }
       }
