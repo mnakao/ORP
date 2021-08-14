@@ -245,7 +245,7 @@ static void aspl_bfs(const int* restrict h_degree, const int* restrict s_degree,
 
     if(flag){
       flag = false;
-      for(int i=1;i<_switches;i++){
+      for(int i=0;i<_switches;i++){
 #if DISCONNECTED_GRAPH
         if(_distance[i] == NOT_USED && h_degree[i] != 0){
           *diameter = INT_MAX;
@@ -307,7 +307,7 @@ static void aspl_bfs_s(const int* restrict h_degree, const int* restrict s_degre
 
     if(flag){
       flag = false;
-      for(int i=1;i<_switches;i++){
+      for(int i=0;i<_switches;i++){
 #if DISCONNECTED_GRAPH
         if(_distance[i] == NOT_USED && h_degree[i%_based_switches] != 0){
           *diameter = INT_MAX;
