@@ -80,10 +80,10 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
     _A = _B;
     _B = tmp;
 
-    if(local_sum != pre_local_sum)
+    if(pre_local_sum != local_sum){
       (*diameter) += 1;
-    
-    pre_local_sum = local_sum;
+      pre_local_sum = local_sum;
+    }
   }
 
 #pragma omp parallel for reduction(+:local_sum)
@@ -140,10 +140,10 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
     _A = _B;
     _B = tmp;
 
-    if(local_sum != pre_local_sum)
+    if(pre_local_sum != local_sum){
       (*diameter) += 1;
-
-    pre_local_sum = local_sum;
+      pre_local_sum = local_sum;
+    }
   }
   
   local_sum = local_sum * _symmetries / 2;
