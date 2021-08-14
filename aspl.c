@@ -73,10 +73,12 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
               local_sum += level * h_degree[i] * h_degree[j];
             }
           }
+#if DISCONNECTED_GRAPH
           else if(h_degree[i] == 0 || h_degree[j] == 0){
             _bitmap[ii] = VISITED;
             k++;
           }
+#endif
         }
       }
     }
@@ -138,10 +140,12 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
                 local_sum += level * h_degree[i%_based_switches] * h_degree[j];
               }
             }
+#if DISCONNECTED_GRAPH
             else if(h_degree[i%_based_switches] == 0 || h_degree[j] == 0){
               _bitmap[ii] = VISITED;
               k++;
             }
+#endif
           }
         }
       }
@@ -242,10 +246,17 @@ static void aspl_bfs(const int* restrict h_degree, const int* restrict s_degree,
     if(flag){
       flag = false;
       for(int i=1;i<_switches;i++){
+#if DISCONNECTED_GRAPH
         if(_distance[i] == NOT_USED && h_degree[i] != 0){
           *diameter = INT_MAX;
           return;
         }
+#else
+        if(_distance[i] == NOT_USED){
+          *diameter = INT_MAX;
+          return;
+        }
+#endif
       }
     }
 
@@ -297,10 +308,17 @@ static void aspl_bfs_s(const int* restrict h_degree, const int* restrict s_degre
     if(flag){
       flag = false;
       for(int i=1;i<_switches;i++){
+#if DISCONNECTED_GRAPH
         if(_distance[i] == NOT_USED && h_degree[i%_based_switches] != 0){
           *diameter = INT_MAX;
           return;
         }
+#else
+        if(_distance[i] == NOT_USED){
+          *diameter = INT_MAX;
+          return;
+        }
+#endif
       }
     }
 
