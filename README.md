@@ -155,6 +155,10 @@ The meaning of each item in the profile is as follows.
 
 Make it easier to move a host from a switch with few hosts to a switch with many hosts in SWING operation.
 
+### ORP_DISCONNECTED=1
+
+Support distributed graphs.
+
 ## Basic Function
 ### Overview
 Basic function calculates ASPL and diameter of a graph.

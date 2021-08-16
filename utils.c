@@ -1,5 +1,5 @@
 #include "common.h"
-static int _enable_bias = NOT_DEFINED;
+static bool _enable_bias = false;
 #ifdef _OPENMP
 static int *_local_frontier;
 #pragma omp threadprivate(_local_frontier)
@@ -23,13 +23,19 @@ void ORP_free_local_frontier()
 
 static void CHECK_BIAS()
 {
-  if(_enable_bias != NOT_DEFINED) return;
-
-  char *val = getenv("ORP_BIAS");
-  if(val)
-    _enable_bias = (atoi(val) == 1);
-  else
-    _enable_bias = false;
+  static bool first = true;
+  if(first){
+    first = false;
+    char *val = getenv("ORP_BIAS");
+    if(val){
+      if(atoi(val) == 1)
+        _enable_bias = true;
+      else if(atoi(val) == 0)
+        _enable_bias = false;
+      else
+	ERROR("Unknown ORP_BIAS value (%d)\n", atoi(val));
+    }
+  }
 }
 
 static bool IS_DIAMETER(const int u, const int v, const int switches, const int symmetries)

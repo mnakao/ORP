@@ -1,5 +1,5 @@
 #include "common.h"
-static bool _enable_avx2 = false, _is_profile = false;
+static bool _enable_avx2 = false, _is_profile = false, _enable_disconnected = false;
 static char* _bitmap = NULL;
 static int _hosts, _switches, _based_switches, _radix, _symmetries, _kind, _elements, _times;
 static int *_frontier = NULL, *_distance = NULL, *_next = NULL;
@@ -73,12 +73,10 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
               local_sum += level * h_degree[i] * h_degree[j];
             }
           }
-#if DISCONNECTED_GRAPH
-          else if(h_degree[i] == 0 || h_degree[j] == 0){
+          else if(_enable_disconnected && (h_degree[i] == 0 || h_degree[j] == 0)){
             _bitmap[ii] = VISITED;
             k++;
           }
-#endif
         }
       }
     }
@@ -140,12 +138,10 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
                 local_sum += level * h_degree[i%_based_switches] * h_degree[j];
               }
             }
-#if DISCONNECTED_GRAPH
-            else if(h_degree[i%_based_switches] == 0 || h_degree[j] == 0){
+            else if(_enable_disconnected && (h_degree[i%_based_switches] == 0 || h_degree[j] == 0)){
               _bitmap[ii] = VISITED;
               k++;
             }
-#endif
           }
         }
       }
@@ -245,18 +241,21 @@ static void aspl_bfs(const int* restrict h_degree, const int* restrict s_degree,
 
     if(flag){
       flag = false;
-      for(int i=0;i<_switches;i++){
-#if DISCONNECTED_GRAPH
-        if(_distance[i] == NOT_USED && h_degree[i] != 0){
-          *diameter = INT_MAX;
-          return;
+      if(_enable_disconnected){
+        for(int i=0;i<_switches;i++){
+          if(_distance[i] == NOT_USED && h_degree[i] != 0){
+            *diameter = INT_MAX;
+            return;
+          }
         }
-#else
-        if(_distance[i] == NOT_USED){
-          *diameter = INT_MAX;
-          return;
+      }
+      else{
+        for(int i=0;i<_switches;i++){
+          if(_distance[i] == NOT_USED){
+            *diameter = INT_MAX;
+            return;
+          }
         }
-#endif
       }
     }
 
@@ -307,18 +306,21 @@ static void aspl_bfs_s(const int* restrict h_degree, const int* restrict s_degre
 
     if(flag){
       flag = false;
-      for(int i=0;i<_switches;i++){
-#if DISCONNECTED_GRAPH
-        if(_distance[i] == NOT_USED && h_degree[i%_based_switches] != 0){
-          *diameter = INT_MAX;
-          return;
+      if(_enable_disconnected){
+        for(int i=0;i<_switches;i++){
+          if(_distance[i] == NOT_USED && h_degree[i%_based_switches] != 0){
+            *diameter = INT_MAX;
+            return;
+          }
         }
-#else
-        if(_distance[i] == NOT_USED){
-          *diameter = INT_MAX;
-          return;
+      }
+      else{
+        for(int i=0;i<_switches;i++){
+          if(_distance[i] == NOT_USED){
+            *diameter = INT_MAX;
+            return;
+          }
         }
-#endif
       }
     }
 
@@ -360,9 +362,27 @@ void ORP_Finalize_aspl()
   }
 }
 
+void CHECK_DISCONNECTED()
+{
+  static bool first = true;
+  if(first){
+    first = false;
+    char *val = getenv("ORP_DISCONNECTED");
+    if(val){
+      if(atoi(val) == 1)
+        _enable_disconnected = true;
+      else if(atoi(val) == 0)
+        _enable_disconnected = false;
+      else
+        ERROR("Unknown ORP_DISCONNECTED value (%d)\n", atoi(val));
+    }
+  }
+}
+
 void ORP_Set_aspl(const int* restrict h_degree, const int* restrict s_degree, const int* restrict adjacency,
                   int *diameter, long *sum, double *ASPL)
 {
+  CHECK_DISCONNECTED();
   double t = ORP_Get_time();
 
   if(_symmetries == 1){

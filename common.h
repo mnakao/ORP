@@ -26,7 +26,6 @@ typedef struct {
   int u[2], v[2], u_d[2], v_d[2], switches, symmetries, op;
 } ORP_Restore;
 
-#define DISCONNECTED_GRAPH 0
 #define ERROR(...) do{fprintf(stderr,__VA_ARGS__); exit(1);}while(0)
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
