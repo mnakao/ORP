@@ -99,7 +99,7 @@ bool accept(const int hosts, const int switches, const int current_diameter, con
       return true;
     }
     else{
-      double diff = ((current_ASPL-ASPL)*switches*hosts);
+      double diff = ((current_ASPL-ASPL)*switches*(hosts-1));
       return (exp(diff/temp) > uniform_rand());
     }
   }

@@ -160,7 +160,7 @@ bool accept_s(const int hosts, const int switches, const int current_diameter, c
       return true;
     }
     else{
-      double diff = ((current_ASPL-ASPL)*switches*hosts)/symmetries;
+      double diff = ((current_ASPL-ASPL)*switches*(hosts-1))/symmetries;
       return (exp(diff/temp) > uniform_rand());
     }
   }
