@@ -362,7 +362,7 @@ void ORP_Finalize_aspl()
   }
 }
 
-void CHECK_DISCONNECTED()
+static void CHECK_DISCONNECTED()
 {
   static bool first = true;
   if(first){
