@@ -1588,8 +1588,6 @@ void* ORP_Generate_random_s(const int hosts, const int switches, const int radix
 
   if(symmetries%2 == 0 && tmp_lines+hosts != *lines)
     ERROR("Something Wrong (id=5)\n");
-  else if(symmetries%2 == 1 && (tmp_lines+hosts != *lines && tmp_lines+hosts+1 != *lines))
-    ERROR("Something Wrong (id=6)\n");
   
   *lines = tmp_lines + hosts;
   int (*adjacency)[radix] = malloc(sizeof(int) * based_switches * radix);
