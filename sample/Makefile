@@ -50,13 +50,13 @@ threads_random.x: random.c ../liborp_threads.a ../include/orp.h
 threads_random_s.x: random_s.c ../liborp_threads.a ../include/orp.h
 	$(CC) $(CFLAGS) $(OMP_FLAGS) -o $@ $< $(THREADS_LIBS)
 threads_sa.x: sa.c ../liborp_threads.a ../include/orp.h
-	$(CC) $(CFLAGS) $(OMP_FLAGS) -o $@ $< $(THREADS_LIBS)
+	$(CC) $(CFLAGS) $(OMP_FLAGS) -o $@ detect_temp.o $< $(THREADS_LIBS)
 threads_sa_s.x: sa_s.c ../liborp_threads.a ../include/orp.h
-	$(CC) $(CFLAGS) $(OMP_FLAGS) -o $@ $< $(THREADS_LIBS)
-threads_sa_ref1.x: sa_ref1.c ./liborp_threads.a ../include/orp.h
-	$(CC) $(CFLAGS) $(OMP_FLAGS) -o $@ $< $(THREADS_LIBS)
-threads_sa_ref1_s.x: sa_ref1_s.c ./liborp_threads.a ../include/orp.h
-	$(CC) $(CFLAGS) $(OMP_FLAGS) -o $@ $< $(THREADS_LIBS)
+	$(CC) $(CFLAGS) $(OMP_FLAGS) -o $@ detect_temp_s.o $< $(THREADS_LIBS)
+threads_sa_ref1.x: sa_ref1.c ../liborp_threads.a ../include/orp.h
+	$(CC) $(CFLAGS) $(OMP_FLAGS) -o $@ detect_temp.o $< $(THREADS_LIBS)
+threads_sa_ref1_s.x: sa_ref1_s.c ../liborp_threads.a ../include/orp.h
+	$(CC) $(CFLAGS) $(OMP_FLAGS) -o $@ detect_temp_s.o $< $(THREADS_LIBS)
 threads_hc.x: hc.c ../liborp_threads.a ../include/orp.h
 	$(CC) $(CFLAGS) $(OMP_FLAGS) -o $@ $< $(THREADS_LIBS)
 
