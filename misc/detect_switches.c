@@ -37,18 +37,19 @@ static double continuous_moore_bound(const int hosts, const int switches, const 
 
 int main()
 {
-  int hosts = 1024, radix = 5;
+  int hosts = 10000, radix = 10;
 
   int s = 3;
   double prev = DBL_MAX;
   while(1){
     if(s*radix-2*(s-1) >= hosts){
       double tmp = continuous_moore_bound(hosts, s, radix);
-      printf(" %d %f\n", s, tmp);
-      if(prev <= tmp)
-        break;
+      printf("%d %f\n", s, tmp);
+      //      if(prev <= tmp)
+      //        break;
       prev = tmp;
     }
+    if(s == 7000) break;
     s++;
   }
 

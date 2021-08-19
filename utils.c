@@ -638,38 +638,40 @@ double ORP_Get_mem_usage(const int kind, const int switches, const int symmetrie
   return mem/(1024*1024); // to Mbytes
 }
 
-int ORP_Get_kind()
+int ORP_Get_kind(const int switches, const int symmetries)
 {
-  int kind  = ASPL_MATRIX;
   char *val = getenv("ORP_ASPL");
   if(val){
     if(strcmp(val, "BFS") == 0)
-      kind = ASPL_BFS;
-    else
-      ERROR("Unknown ORP_ASPL value (%s)\n", val);
+      return ASPL_BFS;
+    else if(strcmp(val, "MAT") == 0 || strcmp(val, "MATRIX") == 0)
+      return ASPL_MATRIX;
+
+    ERROR("Unknown ORP_ASPL value (%s)\n", val);
+    return -1; // dummy
   }
-  
-  return kind;
+  else{
+    int based_switches = switches / symmetries;
+    return (based_switches <= 6)? ASPL_BFS : ASPL_MATRIX;
+  }
 }
 
 bool ORP_Check_profile()
 {
-  static bool first = true, enable_profile = false;
-  
-  if(first){
-    first = false;
-    char *val = getenv("ORP_PROFILE");
-    if(val){
-      if(atoi(val) == 1)
-        enable_profile = true;
-      else if(atoi(val) == 0)
-        enable_profile = false;
-      else
-        ERROR("Unknown ORP_PROFILE value (%d)\n", atoi(val));
-    }
+  char *val = getenv("ORP_PROFILE");
+  if(!val){
+    return false;
+  }
+  else{
+    if(atoi(val) == 1)
+      return true;
+    else if(atoi(val) == 0)
+      return false;
+    else
+      ERROR("Unknown ORP_PROFILE value (%d)\n", atoi(val));
   }
   
-  return enable_profile;
+  return false; // dummy
 }
 
 void ORP_Profile(const char* name, const int kind, const int switches, const int symmetries, 

@@ -46,6 +46,10 @@ double calc_max_temp_s(const int hosts, const int switches, const int radix, con
 
   int (*adjacency)[radix] = malloc(sizeof(int) * based_switches * radix);
   ORP_Conv_edge2adjacency_s(hosts, switches, radix, lines, edge, symmetries, adjacency);
+
+  // Save and unset value of ORP_PROFILE
+  char *val = getenv("ORP_PROFILE");
+  if(val) unsetenv("ORP_PROFILE");
   
   ORP_Init_aspl_s(hosts, switches, radix, symmetries);
   ORP_Set_aspl(h_degree, s_degree, adjacency, &diameter, &sum, &ASPL);
@@ -70,5 +74,8 @@ double calc_max_temp_s(const int hosts, const int switches, const int radix, con
   }
   ORP_Finalize_aspl();
 
+  // Undo value of ORP_ASPL
+  if(val) setenv("ORP_PROFILE", val, 1);
+  
   return (-1.0 * max_diff_energy) / log(0.5);
 }

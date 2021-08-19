@@ -109,14 +109,14 @@ Following figure and its edge file are examples of a graph (h = 15, s = 4, r = 6
 ```
 
 ## Environment variable
-### ORP_ASPL=BFS
+### ORP_ASPL=[MAT|BFS]
 
-This library provides two algorithms for ASPL.
-The default setting calculates the APSL with the matrix method.
-Apart from that, it also provides a method using breadth-first search (BFS).
-While the matrix method is faster, the BFS method consumes less memory.
-In default setting, the matrix method is used.
-In case of ORP_ASPL=BFS, BFS is used.
+This library has two ASPL algorithms, MAT and BFS, one of which is automatically selected.
+When you want to choice the algorithm, please use this environment variable.
+While MAT is an algorithm that uses adjacency matrices,
+BFS is a method that uses breadth-first search.
+In most cases, MAT is faster, but BFS is memory-saving.
+Also, when dealing with graphs with symmetry, BFS may be faster when the `switches/symmetries` value is small enough (approximately 6 or less).
 
 ### ORP_PROFILE=1
 

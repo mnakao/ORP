@@ -35,6 +35,24 @@ int ORP_top_down_step_s(const int level, const int num_frontier, const int* rest
                         int* restrict frontier, int* restrict next, int* restrict distance, const int symmetries);
 extern double ORP_Get_time();
 
+static bool CHECK_DISCONNECTED()
+{
+  char *val = getenv("ORP_DISCONNECTED");
+  if(!val){
+    return false;
+  }
+  else{
+    if(atoi(val) == 1)
+      return true;
+    else if(atoi(val) == 0)
+      return false;
+    else
+      ERROR("Unknown ORP_DISCONNECTED value (%d)\n", atoi(val));
+  }
+
+  return false; // dummy
+}
+
 static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree, const int* restrict adjacency,
                      int *diameter, long *sum, double *ASPL)
 {
@@ -174,10 +192,11 @@ void ORP_Init_aspl_s(const int hosts, const int switches, const int radix, const
     ERROR("hosts(%d) must be divisible by symmetries(%d)\n", hosts, symmetries);
   else if(switches % symmetries != 0)
     ERROR("switches(%d) must be divisible by symmetries(%d)\n", switches, symmetries);
-    
-  _kind           = ORP_Get_kind();
-  _based_switches = switches/symmetries;
-  _elements       = (_based_switches+(UINT64_BITS-1))/UINT64_BITS;
+
+  _enable_disconnected = CHECK_DISCONNECTED();
+    _kind              = ORP_Get_kind(switches, symmetries);
+  _based_switches      = switches/symmetries;
+  _elements            = (_based_switches+(UINT64_BITS-1))/UINT64_BITS;
 #ifdef __AVX2__
   if(_elements >= 4){ // For performance
     _enable_avx2 = true;
@@ -362,27 +381,9 @@ void ORP_Finalize_aspl()
   }
 }
 
-static void CHECK_DISCONNECTED()
-{
-  static bool first = true;
-  if(first){
-    first = false;
-    char *val = getenv("ORP_DISCONNECTED");
-    if(val){
-      if(atoi(val) == 1)
-        _enable_disconnected = true;
-      else if(atoi(val) == 0)
-        _enable_disconnected = false;
-      else
-        ERROR("Unknown ORP_DISCONNECTED value (%d)\n", atoi(val));
-    }
-  }
-}
-
 void ORP_Set_aspl(const int* restrict h_degree, const int* restrict s_degree, const int* restrict adjacency,
                   int *diameter, long *sum, double *ASPL)
 {
-  CHECK_DISCONNECTED();
   double t = ORP_Get_time();
 
   if(_symmetries == 1){
