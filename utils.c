@@ -21,20 +21,27 @@ void ORP_free_local_frontier()
 }
 #endif
 
+bool ORP_is_bias()
+{
+  char *val = getenv("ORP_BIAS");
+  if(val){
+    if(atoi(val) == 1)
+      return true;
+    else if(atoi(val) == 0)
+      return false;
+    else
+      ERROR("Unknown ORP_BIAS value (%d)\n", atoi(val));
+  }
+  
+  return false;
+}
+
 static void CHECK_BIAS()
 {
   static bool first = true;
   if(first){
     first = false;
-    char *val = getenv("ORP_BIAS");
-    if(val){
-      if(atoi(val) == 1)
-        _enable_bias = true;
-      else if(atoi(val) == 0)
-        _enable_bias = false;
-      else
-	ERROR("Unknown ORP_BIAS value (%d)\n", atoi(val));
-    }
+    _enable_bias = ORP_is_bias();
   }
 }
 

@@ -264,6 +264,7 @@ int main(int argc, char *argv[])
   printf("Time            = %f sec.\n", sa_time);
   printf("Assign evenly?  = %s\n", (assign_evenly)? "Yes" : "No");
   printf("ASPL priority?  = %s\n", (ASPL_priority)? "Yes" : "No");
+  printf("BIAS of host?   = %s\n", (ORP_is_bias())? "Yes" : "No");
   printf("Verify?         = %s\n", (ORP_Verify_edge(hosts, switches, radix, lines, edge))? "Yes" : "No");
 
   if(outfname)

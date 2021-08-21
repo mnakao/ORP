@@ -300,7 +300,7 @@ void ORP_Print_degree(int hosts, int switches, int degree[switches])
 ### Verify an edge
 Verify if an edge properties (hosts, switch, radix) are correct.
 ```
-bool ORP_Verify_edge(int hosts, int switches, int radix, int lines, int edge[lines][2]);
+bool ORP_Verify_edge(int hosts, int switches, int radix, int lines, int edge[lines][2])
 ```
 * [IN] hosts : Number of hosts.
 * [IN] switches : Number of switches.
@@ -309,10 +309,16 @@ bool ORP_Verify_edge(int hosts, int switches, int radix, int lines, int edge[lin
 * [IN] edge : Edge list.
 * [RETURN] Whether the edge properties are correct.
 
+### Get the value of the environment variable ORP_BIAS
+```
+bool ORP_is_bias()
+```
+* [RETURN] Whether the value of the environment variable ORP_BIAS is 0 or 1. Returns 0 if not set.
+
 ### Estimate the optimal number of switches
 Estimate the optimal number of switches based on ref. [1].
 ```
-int ORP_Optimize_switches(int hosts, int radix);
+int ORP_Optimize_switches(int hosts, int radix)
 ```
 * [IN] hosts : Number of hosts.
 * [IN] radix : Radix of the switch.
