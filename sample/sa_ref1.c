@@ -206,6 +206,9 @@ int main(int argc, char *argv[])
 
   set_args(argc, argv, &hosts, &switches, &radix, &infname, &outfname, &seed,
            &ncalcs, &max_temp, &min_temp, &ASPL_priority, &bias_of_host);
+
+  if(bias_of_host)
+    setenv("ORP_BIAS", "1", 0);
   
   ORP_Srand(seed);
   if(infname){
