@@ -10,8 +10,15 @@
 #define NOT_DEFINED -1
 #define DEFAULT_SEED 0
 #define DEFAULT_NCALCS 10000
-extern double calc_max_temp(const int hosts, const int switches, const int radix, const int seed);
+extern double calc_max_temp(const int hosts, const int switches, const int radix, const int seed, const bool assign_evenly);
 extern double calc_min_temp();
+
+static void SWAP(int *a, int *b)
+{
+  int tmp = *a;
+  *a = *b;
+  *b = tmp;
+}
 
 static int get_random(const int max)
 {
@@ -63,27 +70,6 @@ static void set_random_edge(const int total_edges, const int switches, const int
   *v   = adjacency[*u][*u_d];
   *v_d = search_index(*v, *u, *u_d, s_degree, radix, adjacency);
 }
-
-#if 0
-static void set_random_edge_bias(const int hosts, const int switches, const int h_degree[switches], const int s_degree[switches],
-                                 const int radix, const int (*adjacency)[radix], int *u, int *v, int *u_d, int *v_d)
-{
-  int r = get_random(hosts+switches);
-  *u = NOT_DEFINED;
-  for(int i=0;i<switches;i++){
-    r -= (h_degree[i] + 1);
-    if(r < 0){
-      *u = i;
-      break;
-    }
-  }
-  if(*u == NOT_DEFINED) ERROR("Something Wrong (id=2)\n");
-  
-  *u_d = get_random(s_degree[*u]);
-  *v   = adjacency[*u][*u_d];
-  *v_d = search_index(*v, *u, *u_d, s_degree, radix, adjacency);
-}
-#endif
 
 bool accept(const int hosts, const int switches, const int current_diameter, const int diameter, const double current_ASPL,
             const double ASPL, const double temp, const bool ASPL_priority)
@@ -228,15 +214,15 @@ int main(int argc, char *argv[])
 
     h_degree = malloc(sizeof(int) * switches);
     s_degree = malloc(sizeof(int) * switches);
-    edge     = ORP_Generate_random(hosts, switches, radix, false, &lines, h_degree, s_degree);
+    edge     = ORP_Generate_random(hosts, switches, radix, true, &lines, h_degree, s_degree);
   }
 
   if(max_temp == NOT_DEFINED)
-    max_temp = calc_max_temp(hosts, switches, radix, seed);
+    max_temp = calc_max_temp(hosts, switches, radix, seed, false);
   
   if(min_temp == NOT_DEFINED)
     min_temp = calc_min_temp();
-    
+
   printf("Hosts = %d, Switches = %d, Radix = %d\n", hosts, switches, radix);
   printf("Random seed = %d\n", seed);
   printf("Number of calculations = %ld\n", ncalcs);
@@ -285,16 +271,21 @@ int main(int argc, char *argv[])
 
       bool enable_swing = true;
       int u[2], v[2], u_d[2], v_d[2];
+      double p[2];
       while(1){
+        set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[0], &v[0], &u_d[0], &v_d[0]);
+        set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[1], &v[1], &u_d[1], &v_d[1]);
         if(bias_of_host){
-          u[0] = get_random(switches);    u_d[0] = get_random(s_degree[u[0]]);
-          v[0] = adjacency[u[0]][u_d[0]]; v_d[0] = search_index(v[0], u[0], u_d[0], s_degree, radix, adjacency);
-          v[1] = get_random(switches);    v_d[1] = get_random(s_degree[v[1]]);
-          u[1] = adjacency[v[1]][v_d[1]]; u_d[1] = search_index(u[1], v[1], v_d[1], s_degree, radix, adjacency);
-        }
-        else{
-          set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[0], &v[0], &u_d[0], &v_d[0]);
-          set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[1], &v[1], &u_d[1], &v_d[1]);
+          p[0] = (double)s_degree[u[0]]/(s_degree[u[0]]+s_degree[v[0]]);
+          p[1] = (double)s_degree[u[1]]/(s_degree[u[1]]+s_degree[v[1]]);
+          if(p[0] > uniform_rand()){
+            SWAP(&u[0],   &v[0]);
+            SWAP(&u_d[0], &v_d[0]);
+          }
+          if(p[1] < uniform_rand()){
+	    SWAP(&u[1],   &v[1]);
+            SWAP(&u_d[1], &v_d[1]);
+          }
         }
         if(u[0] == u[1] || s_degree[u[0]] == 1) continue;
         //        if(v[0] == u[1]) continue;

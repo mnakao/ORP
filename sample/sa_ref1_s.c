@@ -10,7 +10,7 @@
 #define NOT_DEFINED -1
 #define DEFAULT_SEED 0
 #define DEFAULT_NCALCS 10000
-extern double calc_max_temp_s(const int hosts, const int switches, const int radix, const int seed, const int symmetries);
+extern double calc_max_temp_s(const int hosts, const int switches, const int radix, const int seed, const int symmetries, const bool assign_evenly);
 extern double calc_min_temp_s();
 
 static void SWAP(int *a, int *b)
@@ -105,30 +105,6 @@ static void set_random_edge_s(const int based_total_edges, const int switches, c
   *v   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, *u, *u_d); // v = adjacency[u][u_d];
   *v_d = search_index_s(*v, *u, *u_d, s_degree, radix, switches, adjacency, symmetries);
 }
-
-#if 0
-static void set_random_edge_bias_s(const int based_hosts, const int switches, const int h_degree[switches], const int s_degree[switches],
-                                   const int radix, const int (*adjacency)[radix], const int symmetries, int *u, int *v, int *u_d, int *v_d)
-{
-  int based_switches = switches/symmetries;
-  int r = get_random(based_hosts+based_switches);
-
-  *u = NOT_DEFINED;
-  for(int i=0;i<based_switches;i++){
-    r -= (h_degree[i] + 1);
-    if(r < 0){
-      *u = i;
-      break;
-    }
-  }
-  if(*u == NOT_DEFINED) ERROR("Something Wrong (id=2)\n");
-  
-  *u   = get_random(symmetries) * based_switches + (*u);
-  *u_d = get_random(s_degree[(*u)%based_switches]);
-  *v   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, *u, *u_d); // v = adjacency[u][u_d];
-  *v_d = search_index_s(*v, *u, *u_d, s_degree, radix, switches, adjacency, symmetries);
-}
-#endif
 
 static bool check_rotated_edges_overlap(const int u0, const int v0, const int u1, const int v1,
                                         const int switches, const int symmetries)
@@ -335,11 +311,11 @@ int main(int argc, char *argv[])
     based_switches = switches/symmetries;
     h_degree = malloc(sizeof(int) * based_switches);
     s_degree = malloc(sizeof(int) * based_switches);
-    edge     = ORP_Generate_random_s(hosts, switches, radix, false, symmetries, &lines, h_degree, s_degree);
+    edge     = ORP_Generate_random_s(hosts, switches, radix, true, symmetries, &lines, h_degree, s_degree);
   }
 
   if(max_temp == NOT_DEFINED)
-    max_temp = calc_max_temp_s(hosts, switches, radix, seed, symmetries);
+    max_temp = calc_max_temp_s(hosts, switches, radix, seed, symmetries, false);
   
   if(min_temp == NOT_DEFINED)
     min_temp = calc_min_temp_s();
@@ -378,6 +354,7 @@ int main(int argc, char *argv[])
     double cooling_rate = pow(min_temp/max_temp, (double)1.0/ncalcs), temp = max_temp;
     int u[2], v[2], u_d[2], v_d[2], tmp[4];
     int based_total_edges = 0;
+    double p[2];
     for(int i=0;i<based_switches;i++)
       based_total_edges += s_degree[i];
 
@@ -394,20 +371,19 @@ int main(int argc, char *argv[])
 
       bool enable_swing = true, enable_swap = true;
       while(1){
+        set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[0], &v[0], &u_d[0], &v_d[0]);
+        set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[1], &v[1], &u_d[1], &v_d[1]);
         if(bias_of_host){
-          u[0]   = get_random(switches);
-          u_d[0] = get_random(s_degree[u[0]%based_switches]);
-          v[0]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, u[0], u_d[0]); // v[0] = adjacency[u[0]][u_d[0]];
-          v_d[0] = search_index_s(v[0], u[0], u_d[0], s_degree, radix, switches, adjacency, symmetries);
-          //
-          v[1]   = get_random(switches);
-          v_d[1] = get_random(s_degree[v[1]%based_switches]);
-          u[1]   = GLOBAL_ADJ(switches, radix, symmetries, adjacency, v[1], v_d[1]); // u[1] = adjacency[v[1]][v_d[1]];
-          u_d[1] = search_index_s(u[1], v[1], v_d[1], s_degree, radix, switches, adjacency, symmetries);
-        }
-        else{
-          set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[0], &v[0], &u_d[0], &v_d[0]);
-          set_random_edge_s(based_total_edges, switches, s_degree, radix, adjacency, symmetries, &u[1], &v[1], &u_d[1], &v_d[1]);
+          p[0] = (double)s_degree[u[0]%based_switches]/(s_degree[u[0]%based_switches]+s_degree[v[0]%based_switches]);
+          p[1] = (double)s_degree[u[1]%based_switches]/(s_degree[u[1]%based_switches]+s_degree[v[1]%based_switches]);
+          if(p[0] > uniform_rand()){
+            SWAP(&u[0],   &v[0]);
+            SWAP(&u_d[0], &v_d[0]);
+          }
+          if(p[1] < uniform_rand()){
+            SWAP(&u[1],   &v[1]);
+            SWAP(&u_d[1], &v_d[1]);
+          }
         }
         if(u[0] == u[1] || s_degree[u[0]%based_switches] == 1) continue;
         // if(v[0] == u[1]) continue;
@@ -619,6 +595,7 @@ int main(int argc, char *argv[])
   printf("ASPL Gap        = %.10f (%.10f - %.10f)\n", best_ASPL - low_ASPL, best_ASPL, low_ASPL);
   printf("Time            = %f sec.\n", sa_time);
   printf("ASPL priority?  = %s\n", (ASPL_priority)? "Yes" : "No");
+  printf("Bias of hosts?  = %s\n", (bias_of_host)? "Yes" : "No");
   //  printf("Verify?         = %s\n", (ORP_Verify_edge(hosts, switches, radix, lines, edge))? "Yes" : "No");
 
   if(outfname)

@@ -32,7 +32,7 @@ double calc_min_temp_s()
   return -2.0 / log(0.0001);
 }
 
-double calc_max_temp_s(const int hosts, const int switches, const int radix, const int seed, const int symmetries)
+double calc_max_temp_s(const int hosts, const int switches, const int radix, const int seed, const int symmetries, const bool assign_evenly)
 {
   int lines, diameter, current_diameter, ncalcs = 100, based_switches = switches/symmetries;
   long sum;
@@ -42,7 +42,7 @@ double calc_max_temp_s(const int hosts, const int switches, const int radix, con
   ORP_Srand(seed);
   int *h_degree  = malloc(sizeof(int) * based_switches);
   int *s_degree  = malloc(sizeof(int) * based_switches);
-  int (*edge)[2] = ORP_Generate_random_s(hosts, switches, radix, false, symmetries, &lines, h_degree, s_degree);
+  int (*edge)[2] = ORP_Generate_random_s(hosts, switches, radix, true, symmetries, &lines, h_degree, s_degree);
 
   int (*adjacency)[radix] = malloc(sizeof(int) * based_switches * radix);
   ORP_Conv_edge2adjacency_s(hosts, switches, radix, lines, edge, symmetries, adjacency);
@@ -57,7 +57,7 @@ double calc_max_temp_s(const int hosts, const int switches, const int radix, con
   current_ASPL     = ASPL;
 
   for(int i=0;i<ncalcs;i++){
-    if(uniform_rand() > 0.5)
+    if(assign_evenly || uniform_rand() > 0.5)
       ORP_Swap_adjacency_s(switches, radix, s_degree, symmetries, &r, adjacency);
     else
       ORP_Swing_adjacency_s(switches, radix, symmetries, h_degree, s_degree, &r, adjacency);

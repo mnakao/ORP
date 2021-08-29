@@ -10,7 +10,7 @@
 #define NOT_DEFINED -1
 #define DEFAULT_SEED 0
 #define DEFAULT_NCALCS 10000
-extern double calc_max_temp_s(const int hosts, const int switches, const int radix, const int seed, const int symmetries);
+extern double calc_max_temp_s(const int hosts, const int switches, const int radix, const int seed, const int symmetries, const bool assign_evenly);
 extern double calc_min_temp_s();
 
 static double uniform_rand()
@@ -172,11 +172,11 @@ int main(int argc, char *argv[])
     based_switches = switches/symmetries;
     h_degree = malloc(sizeof(int) * based_switches);
     s_degree = malloc(sizeof(int) * based_switches);
-    edge     = ORP_Generate_random_s(hosts, switches, radix, assign_evenly, symmetries, &lines, h_degree, s_degree);
+    edge     = ORP_Generate_random_s(hosts, switches, radix, true, symmetries, &lines, h_degree, s_degree);
   }
 
   if(max_temp == NOT_DEFINED)
-    max_temp = calc_max_temp_s(hosts, switches, radix, seed, symmetries);
+    max_temp = calc_max_temp_s(hosts, switches, radix, seed, symmetries, assign_evenly);
   
   if(min_temp == NOT_DEFINED)
     min_temp = calc_min_temp_s();

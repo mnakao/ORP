@@ -10,7 +10,7 @@
 #define NOT_DEFINED -1
 #define DEFAULT_SEED 0
 #define DEFAULT_NCALCS 10000
-extern double calc_max_temp(const int hosts, const int switches, const int radix, const int seed);
+extern double calc_max_temp(const int hosts, const int switches, const int radix, const int seed, const int assign_evenly);
 extern double calc_min_temp();
 
 static double uniform_rand()
@@ -159,11 +159,11 @@ int main(int argc, char *argv[])
 
     h_degree = malloc(sizeof(int) * switches);
     s_degree = malloc(sizeof(int) * switches);
-    edge     = ORP_Generate_random(hosts, switches, radix, assign_evenly, &lines, h_degree, s_degree);
+    edge     = ORP_Generate_random(hosts, switches, radix, true, &lines, h_degree, s_degree);
   }
 
   if(max_temp == NOT_DEFINED)
-    max_temp = calc_max_temp(hosts, switches, radix, seed);
+    max_temp = calc_max_temp(hosts, switches, radix, seed, assign_evenly);
 
   if(min_temp == NOT_DEFINED)
     min_temp = calc_min_temp();
