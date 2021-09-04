@@ -289,6 +289,9 @@ int main(int argc, char *argv[])
   
   ORP_Srand(seed);
   if(infname){
+    if(hosts != NOT_DEFINED || radix != NOT_DEFINED || switches != NOT_DEFINED)
+      ERROR("When using -f option, you cannnot use -H, -R, and -S.\n");
+    
     ORP_Read_property(infname, &hosts, &switches, &radix, &lines);
     if(hosts%symmetries != 0 || switches%symmetries != 0)
       ERROR("hosts and switches must be even numbers\n ");

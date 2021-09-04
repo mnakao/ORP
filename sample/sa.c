@@ -143,6 +143,9 @@ int main(int argc, char *argv[])
   
   ORP_Srand(seed);
   if(infname){
+    if(hosts != NOT_DEFINED || radix != NOT_DEFINED || switches != NOT_DEFINED)
+      ERROR("When using -f option, you cannnot use -H, -R, and -S.\n");
+    
     ORP_Read_property(infname, &hosts, &switches, &radix, &lines);
     h_degree = malloc(sizeof(int) * switches);
     s_degree = malloc(sizeof(int) * switches);
