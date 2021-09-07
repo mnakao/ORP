@@ -76,6 +76,10 @@ double calc_max_temp(const int hosts, const int switches, const int radix, const
 
   // Undo value of ORP_ASPL
   if(val) setenv("ORP_PROFILE", val, 1);
-  
+
+  free(h_degree);
+  free(s_degree);
+  free(edge);
+  free(adjacency);
   return (-1.0 * max_diff_energy) / log(0.5);
 }
