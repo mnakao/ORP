@@ -144,6 +144,7 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
     level++;
 #pragma omp parallel for reduction(+:k,local_sum)
     for(int i=0;i<_switches;i++){
+      int ib = i%_based_switches;
       for(int j=0;j<_based_switches;j++){
         if(i != j){
           int ii = i*_based_switches+j;
@@ -151,12 +152,12 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
             if(_B[i*_elements+(j/UINT64_BITS)] & (0x1ULL<<(j%UINT64_BITS))){
               _bitmap[ii] = VISITED;
               k++;
-              if(h_degree[i%_based_switches] != 0 && h_degree[j] != 0){
+              if(h_degree[ib] != 0 && h_degree[j] != 0){
                 *diameter = MAX(*diameter, level-2);
-                local_sum += level * h_degree[i%_based_switches] * h_degree[j];
+                local_sum += level * h_degree[ib] * h_degree[j];
               }
             }
-            else if(_enable_disconnected && (h_degree[i%_based_switches] == 0 || h_degree[j] == 0)){
+            else if(_enable_disconnected && (h_degree[ib] == 0 || h_degree[j] == 0)){
               _bitmap[ii] = VISITED;
               k++;
             }
