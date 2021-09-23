@@ -637,8 +637,8 @@ double ORP_Get_mem_usage(const int kind, const int switches, const int symmetrie
 {
   double mem;
   if(kind == ASPL_MATRIX){
-    mem  = ((double)switches * switches * sizeof(uint64_t) * 2)/UINT64_BITS;
-    mem += (double)switches * switches * sizeof(char);
+    mem  = ((double)switches * switches/symmetries * sizeof(uint64_t) * 2)/UINT64_BITS;
+    mem +=  (double)switches * switches/symmetries * sizeof(char);
   }
   else{ // kind == ASPL_BFS
     mem  = (double)switches * 3 * sizeof(int);
