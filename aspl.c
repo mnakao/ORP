@@ -77,8 +77,9 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
   for(int kk=0;kk<_switches;kk++){
     ORP_Matmul(_A, _B, _switches, _radix, s_degree, adjacency, _elements, _enable_avx2);
 
+    int local_diameter = 0;
     level++;
-#pragma omp parallel for reduction(+:k,local_sum)
+#pragma omp parallel for reduction(+:k,local_sum) reduction(max:local_diameter)
     for(int i=0;i<_switches;i++){
       for(int j=i+1;j<_switches;j++){
         int ii = i*_switches+j;
@@ -87,7 +88,7 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
             _bitmap[ii] = VISITED;
             k++;
             if(h_degree[i] != 0 && h_degree[j] != 0){
-              *diameter = MAX(*diameter, level-2);
+              local_diameter = MAX(*diameter, level-2);
               local_sum += level * h_degree[i] * h_degree[j];
             }
           }
@@ -98,6 +99,7 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
         }
       }
     }
+    *diameter = local_diameter;
     if(k == stop_k) break;
 
     // swap A <-> B
@@ -141,8 +143,9 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
   for(int kk=0;kk<_switches;kk++){
     ORP_Matmul_s(_A, _B, _switches, _radix, s_degree, adjacency, _elements, _enable_avx2, _symmetries);
 
+    int local_diameter = 0;
     level++;
-#pragma omp parallel for reduction(+:k,local_sum)
+#pragma omp parallel for reduction(+:k,local_sum) reduction(max:local_diameter)
     for(int i=0;i<_switches;i++){
       int ib = i%_based_switches;
       for(int j=0;j<_based_switches;j++){
@@ -153,7 +156,7 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
               _bitmap[ii] = VISITED;
               k++;
               if(h_degree[ib] != 0 && h_degree[j] != 0){
-                *diameter = MAX(*diameter, level-2);
+                local_diameter = MAX(*diameter, level-2);
                 local_sum += level * h_degree[ib] * h_degree[j];
               }
             }
@@ -165,7 +168,7 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
         }
       }
     }
-
+    *diameter = local_diameter;
     if(k == stop_k) break;
 
     // swap A <-> B
