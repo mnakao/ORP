@@ -65,7 +65,7 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
     _A[i] = _B[i] = 0;
   
   long k = 0, stop_k = ((long)_switches*_switches-_switches)/2, local_sum = 0;
-
+  int local_diameter = 0;
 #pragma omp parallel for
   for(int i=0;i<_switches;i++){
     unsigned int offset = i*_elements+i/UINT64_BITS;
@@ -77,7 +77,6 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
   for(int kk=0;kk<_switches;kk++){
     ORP_Matmul(_A, _B, _switches, _radix, s_degree, adjacency, _elements, _enable_avx2);
 
-    int local_diameter = 0;
     level++;
 #pragma omp parallel for reduction(+:k,local_sum) reduction(max:local_diameter)
     for(int i=0;i<_switches;i++){
@@ -88,7 +87,7 @@ static void aspl_mat(const int* restrict h_degree, const int* restrict s_degree,
             _bitmap[ii] = VISITED;
             k++;
             if(h_degree[i] != 0 && h_degree[j] != 0){
-              local_diameter = MAX(*diameter, level-2);
+              local_diameter = MAX(local_diameter, level-2);
               local_sum += level * h_degree[i] * h_degree[j];
             }
           }
@@ -132,6 +131,7 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
     _A[i] = _B[i] = 0;
 
   long k = 0, stop_k = (long)_switches*_based_switches-_based_switches, local_sum = 0;
+  int local_diameter = 0;
 #pragma omp parallel for
   for(int i=0;i<_based_switches;i++){
     unsigned int offset = i*_elements+i/UINT64_BITS;
@@ -143,7 +143,6 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
   for(int kk=0;kk<_switches;kk++){
     ORP_Matmul_s(_A, _B, _switches, _radix, s_degree, adjacency, _elements, _enable_avx2, _symmetries);
 
-    int local_diameter = 0;
     level++;
 #pragma omp parallel for reduction(+:k,local_sum) reduction(max:local_diameter)
     for(int i=0;i<_switches;i++){
@@ -156,7 +155,7 @@ static void aspl_mat_s(const int* restrict h_degree, const int* restrict s_degre
               _bitmap[ii] = VISITED;
               k++;
               if(h_degree[ib] != 0 && h_degree[j] != 0){
-                local_diameter = MAX(*diameter, level-2);
+                local_diameter = MAX(local_diameter, level-2);
                 local_sum += level * h_degree[ib] * h_degree[j];
               }
             }
