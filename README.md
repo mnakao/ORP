@@ -5,9 +5,12 @@ You can use following.
 * liborp_threads.a : Threads version
 
 ## Algotherm for hASPL (host-to-host Average Shortest Path Length)
-It uses an algorithm that is an extension of the following paper (Open Access). _When you write a paper using this library, please refer to the paper._
+It uses an algorithm that is an extension of the following paper (Open Access).
+When you write a paper using this library, please refer to the paper.
+
 * https://dl.acm.org/doi/10.1145/3368474.3368478
 
+```
 @inproceedings{10.1145/3368474.3368478,
   author = {Nakao, Masahiro and Murai, Hitoshi and Sato, Mitsuhisa},
   title = {Parallelization of All-Pairs-Shortest-Path Algorithms in Unweighted Graph},
@@ -24,6 +27,7 @@ It uses an algorithm that is an extension of the following paper (Open Access). 
   location = {Fukuoka, Japan},
   series = {HPCAsia2020}
 }
+```
 
 ## Quick start
 ### Serial version
