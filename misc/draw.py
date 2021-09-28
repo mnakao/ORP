@@ -2,18 +2,16 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 from itertools import *
-import argparse
-import os, sys, tempfile
+import argparse, os, sys, tempfile, subprocess
 import networkx as nx
 import matplotlib as mpl
-mpl.use('Agg')
 import matplotlib.pyplot as plt
-import subprocess
-host_size    = 30
-switch_size  = 100
-host_color   = "blue"
-switch_color = "red"
-edge_color   = '#222222'
+h_size       = 30
+s_size       = 100
+h_color      = "#ff3300"
+s_color      = "blue"
+h_edge_color = "#ff3300"
+s_edge_color = "blue"
 alpha        = 0.7
 
 argumentparser = argparse.ArgumentParser()
@@ -43,9 +41,6 @@ def main():
 	fp_temp.seek(0)
 	g = nx.read_edgelist(fp_temp.name, nodetype=int, data=False)
 
-	if in_edges_path.endswith(".gz"):
-		in_edges_path = os.path.splitext(in_edges_path)[0]
-
 	out_image_path = os.path.splitext(in_edges_path)[0] + ".png"
 	out_image_path = os.path.basename(out_image_path)
 
@@ -53,12 +48,19 @@ def main():
 	node_color = []
 	for i in g.nodes:
 		if i < hosts:
-			node_size.append(host_size)
-			node_color.append(host_color)
+			node_size.append(h_size)
+			node_color.append(h_color)
 		else:
-			node_size.append(switch_size)
-			node_color.append(switch_color)
+			node_size.append(s_size)
+			node_color.append(s_color)
 
+	edge_color = []
+	for i in g.edges:
+		if i[0] < hosts or i[1] < hosts:
+			edge_color.append(h_edge_color)
+		else:
+			edge_color.append(s_edge_color)
+			
 	layout_host   = nx.circular_layout([i for i in range(hosts)])
 	layout_switch = nx.circular_layout([i + hosts for i in range(switches)])
 	for key, value in layout_switch.items():
