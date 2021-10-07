@@ -49,7 +49,7 @@ static void print_help(char *argv)
 {
   fprintf(stderr, "%s -H hosts -S switches -R radix -G symmetries [-f input] [-o output] [-s seed] [-n calcs] [-w max_temp] [-c min_temp] [-A] [-E]\n", argv);
   fprintf(stderr, "  -H : Number of hosts (Required when -f option is not specified)\n");
-  fprintf(stderr, "  -S : Number of switches (Set automatically when -f and -S are not specified).\n");
+  fprintf(stderr, "  -S : Number of switches (Set automatically when -f and -S are not specified)\n");
   fprintf(stderr, "  -R : Radix (Required when -f is not specified)\n");
   fprintf(stderr, "  -G : Numer of symmetries (Default: 1)\n");
   fprintf(stderr, "  -f : Input file\n");
