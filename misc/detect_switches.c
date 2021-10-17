@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <float.h>
 #include <math.h>
+#include <stdbool.h>
 #include <unistd.h>
 #define NOT_DEFINED -1
 #define ERROR(...) do{fprintf(stderr,__VA_ARGS__); exit(1);}while(0)
@@ -79,7 +80,8 @@ static double continuous_moore_bound(const int hosts, const int switches, const 
 
 int main(int argc, char *argv[])
 {
-  int hosts = NOT_DEFINED, radix = NOT_DEFINED, start = 3, end = NOT_DEFINED;
+  bool first = true;
+  int hosts = NOT_DEFINED, radix = NOT_DEFINED, start = 3, end = NOT_DEFINED, s = NOT_DEFINED;
   double prev = DBL_MAX;
   set_args(argc, argv, &hosts, &radix, &start, &end);
   if(hosts == NOT_DEFINED || radix == NOT_DEFINED)
@@ -89,8 +91,14 @@ int main(int argc, char *argv[])
     if(start*radix-2*(start-1) >= hosts){
       double tmp = continuous_moore_bound(hosts, start, radix);
       printf("%d\t%f\n", start, tmp);
-      if(prev <= tmp && end == NOT_DEFINED)
-        break;
+      if(prev <= tmp){
+        if(first){
+          s = start;
+          first = false;
+        }
+        if(end == NOT_DEFINED)
+          break;
+      }
       
       prev = tmp;
     }
@@ -98,6 +106,8 @@ int main(int argc, char *argv[])
     start++;
   }
 
-  printf("Host = %d, Radix = %d, Switch = %d\n", hosts, radix, start-1);
+  if(s != NOT_DEFINED)
+    printf("Host = %d, Radix = %d, Switch = %d\n", hosts, radix, s-1);
+  
   return 0;
 }

@@ -36,20 +36,20 @@ int main(int argc, char *argv[])
   printf("ASPL Gap     = %.10f (%.10f - %.10f)\n", ASPL - low_ASPL, ASPL, low_ASPL);
   printf("--\n");
   
-  int *hist = malloc((radix+1) * sizeof(int));
-  for(int i=0;i<radix+1;i++)  hist[i] = 0;
-  for(int i=0;i<switches;i++) hist[s_degree[i]]++;
+  int *hist = malloc(radix * sizeof(int));
+  for(int i=0;i<radix;i++)    hist[i] = 0;
+  for(int i=0;i<switches;i++) hist[h_degree[i]]++;
 
   int s = 0;
-  printf("#Num : connected to switches\n");
-  for(int i=1;i<radix+1;i++){
+  printf("#Num\tconnected to hosts\n");
+  for(int i=0;i<radix;i++){
     s += hist[i];
-    printf("%d : %d\n", i, hist[i]);
+    printf("%d\t%d\n", i, hist[i]);
   }
   printf("---\n");
   printf("SUM : %d\n", s);
   
-  if(s != switches || hist[0] != 0){
+  if(s != switches){
     printf("Error\n");
     exit(1);
   }
