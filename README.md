@@ -4,6 +4,19 @@ You can use following.
 * liborp.a : Serial version
 * liborp_threads.a : Threads version
 
+And, ``misc/draw.py`` is a Python script to draw a graph.
+
+```
+$ python misc/draw.py sample/graph/h128s16r24.edges
+```
+
+![](https://raw.githubusercontent.com/mnakao/ORP-misc/main/img/h128s16r24.png)
+
+Blue circle is a switch, red circle is a hosts. This script has two options.
+
+* -n : Output vertex number
+* -s : Image size
+
 ## Algotherm for hASPL (host-to-host Average Shortest Path Length)
 It uses an algorithm that is an extension of the following paper (Open Access).
 When you write a paper using this library, please refer to the paper.
