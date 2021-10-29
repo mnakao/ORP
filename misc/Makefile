@@ -15,8 +15,12 @@ endif
 LIBS=../liborp.a -lm
 THREADS_LIBS=../liborp_threads.a -lm
 TMP := $(shell mktemp)
-serial: detect_temp.x detect_switches.x histgram_s.x histgram_h.x opt_complete_graph.x add_vertex.x
+serial: detect_temp.x detect_switches.x histgram_s.x histgram_h.x opt_complete_graph.x add_vertex.x simgrid.x hmetis.x
 all: serial
+hmetis.x: hmetis.c
+	$(CC) $(CFLAGS) -o $@ $<
+simgrid.x: simgrid.c
+	$(CC) $(CFLAGS) -o $@ $<
 add_vertex.x: add_vertex.c ../liborp.a ../include/orp.h
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 opt_complete_graph.x: opt_complete_graph.c ../liborp.a ../include/orp.h
