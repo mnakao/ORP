@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
   // Output
   printf("%d %d 10\n", lines, switches);
   for(int i=0;i<lines;i++)
-    printf("%d %d\n", edge[i][0], edge[i][1]);
+    printf("%d %d\n", edge[i][0]+1, edge[i][1]+1); // Vertex number in hmetis is 1-origin.
 
   for(int i=0;i<switches;i++)
     printf("%d\n", h_degree[i]);
