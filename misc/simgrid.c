@@ -2,9 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#define PERFORMANCE "200Gf"
+#define PERFORMANCE "500Gf"
 #define BANDWIDTH   "100Gbps"
-#define LATENCY     "100ns"
+#define NIC_LATENCY "600ns"
+#define SW_LATENCY  "100ns"
 #define MAX_FILENAME_LENGTH (256)
 #define NOT_DEFINED         (-1)
 #define INF                 (1000000000)
@@ -31,18 +32,27 @@ void print_hosts(const int hosts)
     printf("    <host id=\"host%d\" speed=\"%s\"/>\n", i, PERFORMANCE);
 }
 
-void print_lines(const int lines, const int edge[lines][2])
+void print_lines(const int hosts, const int lines, const int edge[lines][2])
 {
   for(int i=0;i<lines;i++){
     int n = edge[i][0];
     int m = edge[i][1];
-    if(n > m)
-      printf("    <link bandwidth=\"%s\" latency=\"%s\" id=\"link%dto%d\"/>\n", BANDWIDTH, LATENCY, m, n);
-    else
-      printf("    <link bandwidth=\"%s\" latency=\"%s\" id=\"link%dto%d\"/>\n", BANDWIDTH, LATENCY, n, m);
+    if(n > m){
+      if(n >= hosts && m >= hosts)
+        printf("    <link bandwidth=\"%s\" latency=\"%s\" id=\"link%dto%d\"/>\n", BANDWIDTH, SW_LATENCY, m, n);
+      else
+        printf("    <link bandwidth=\"%s\" latency=\"%s\" id=\"link%dto%d\"/>\n", BANDWIDTH, NIC_LATENCY, m, n);
+    }
+    else{
+      if(n >= hosts && m >= hosts)
+        printf("    <link bandwidth=\"%s\" latency=\"%s\" id=\"link%dto%d\"/>\n", BANDWIDTH, SW_LATENCY, n, m);
+      else
+        printf("    <link bandwidth=\"%s\" latency=\"%s\" id=\"link%dto%d\"/>\n", BANDWIDTH, NIC_LATENCY, n, m);
+    }
   }
 }
 
+// Ref. https://blue-9.hatenadiary.com/entry/2018/01/25/190000
 void print_link_ctn(const int src, const int dst, const int vertices, const int lines,
 		    const int edge[lines][2], double dist[vertices][vertices], int count[vertices][vertices])
 {
@@ -210,7 +220,7 @@ int main(int argc, char *argv[])
 
   print_header();
   print_hosts(hosts);
-  print_lines(lines, edge);
+  print_lines(hosts, lines, edge);
   print_routes(hosts, switches, lines, edge);
   print_footer();
   
