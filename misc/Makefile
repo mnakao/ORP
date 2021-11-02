@@ -15,17 +15,23 @@ endif
 LIBS=../liborp.a -lm
 THREADS_LIBS=../liborp_threads.a -lm
 TMP := $(shell mktemp)
-serial: detect_temp.x detect_switches.x histgram_s.x histgram_h.x opt_complete_graph.x add_vertex.x simgrid.x simgrid_random.x simgrid_dfs.x hmetis.x metis.x
+serial: detect_temp.x detect_switches.x histgram_s.x histgram_h.x opt_complete_graph.x add_vertex.x hmetis.x metis.x simgrid_dijkstra.x simgrid_dijkstra_dfs.x simgrid_dijkstra_random.x simgrid_wf.x simgrid_wf_dfs.x simgrid_wf_random.x
 all: serial
+simgrid_dijkstra.x: simgrid_dijkstra.c
+	$(CC) $(CFLAGS) -o $@ $<
+simgrid_dijkstra_dfs.x: simgrid_dijkstra_dfs.c
+	$(CC) $(CFLAGS) -o $@ $<
+simgrid_dijkstra_random.x: simgrid_dijkstra_random.c
+	$(CC) $(CFLAGS) -o $@ $<
+simgrid_wf.x: simgrid_wf.c
+	$(CC) $(CFLAGS) -o $@ $<
+simgrid_wf_dfs.x: simgrid_wf_dfs.c
+	$(CC) $(CFLAGS) -o $@ $<
+simgrid_wf_random.x: simgrid_wf_random.c
+	$(CC) $(CFLAGS) -o $@ $<
 metis.x: metis.c
 	$(CC) $(CFLAGS) -o $@ $<
 hmetis.x: hmetis.c
-	$(CC) $(CFLAGS) -o $@ $<
-simgrid_dfs.x: simgrid_dfs.c
-	$(CC) $(CFLAGS) -o $@ $<
-simgrid_random.x: simgrid_random.c
-	$(CC) $(CFLAGS) -o $@ $<
-simgrid.x: simgrid.c
 	$(CC) $(CFLAGS) -o $@ $<
 add_vertex.x: add_vertex.c ../liborp.a ../include/orp.h
 	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
