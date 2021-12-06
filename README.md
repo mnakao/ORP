@@ -328,7 +328,7 @@ bool ORP_Verify_edge(int hosts, int switches, int radix, int lines, int edge[lin
 
 ### Get the value of the environment variable ORP_BIAS
 ```
-bool ORP_is_bias()
+bool ORP_Is_bias()
 ```
 * [RETURN] Whether the value of the environment variable ORP_BIAS is 0 or 1. Returns 0 if not set.
 

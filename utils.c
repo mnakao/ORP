@@ -21,7 +21,7 @@ void ORP_free_local_frontier()
 }
 #endif
 
-bool ORP_is_bias()
+bool ORP_Is_bias()
 {
   char *val = getenv("ORP_BIAS");
   if(val){
@@ -41,7 +41,7 @@ static void CHECK_BIAS()
   static bool first = true;
   if(first){
     first = false;
-    _enable_bias = ORP_is_bias();
+    _enable_bias = ORP_Is_bias();
   }
 }
 
