@@ -1172,11 +1172,62 @@ void ORP_Swing_adjacency(const int switches, const int radix, int h_degree[switc
     adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED;
     s_degree[u[0]]--;
     adjacency[u[1]][s_degree[u[1]]]   = v[0];
-    s_degree[u[1]]++;
-  
+    s_degree[u[1]]++;  
     h_degree[u[0]]++; h_degree[u[1]]--;
     break;
   }
+}
+
+bool ORP_Swing_adjacency_with_one_edge(const int hosts, const int switches, const int radix,
+                                       const int selected_edge[2], int h_degree[switches], int s_degree[switches],
+                                       ORP_Restore *r, int adjacency[switches][radix])
+{
+  if(selected_edge[0] < hosts || selected_edge[1] < hosts)
+    ERROR("Edge includes host\n");
+  
+  CHECK_BIAS();
+
+  int u[2], v[2], u_d[2], v_d[2]; // u_d[1], v[1], and v_d[1] are not used because it is a host.
+  u[0]   = selected_edge[0] - hosts;
+  v[0]   = selected_edge[1] - hosts;
+  u_d[0] = search_index(u[0], v[0], -1,     s_degree, radix, adjacency);
+  v_d[0] = search_index(v[0], u[0], u_d[0], s_degree, radix, adjacency);
+  
+  int total_edges = 0;
+  double p[2];
+  for(int i=0;i<switches;i++)
+    total_edges += s_degree[i];
+
+  set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[1], &v[1], &u_d[1], &v_d[1]);
+
+  if(_enable_bias){
+    p[0] = (double)s_degree[u[0]]/(s_degree[u[0]]+s_degree[v[0]]);
+    p[1] = (double)s_degree[u[1]]/(s_degree[u[1]]+s_degree[v[1]]);
+    if(p[0] > uniform_rand()){
+      SWAP(&u[0],   &v[0]);
+      SWAP(&u_d[0], &v_d[0]);
+    }
+    if(p[1] < uniform_rand()){
+      SWAP(&u[1],   &v[1]);
+      SWAP(&u_d[1], &v_d[1]);
+    }
+  }
+
+  if(u[0] == u[1] || s_degree[u[0]] == 1 || h_degree[u[1]] == 0) return false;
+  
+  if(!check_multiple_edges(v[0], v_d[0], u[1], switches, radix, s_degree, adjacency))
+    return false;
+  
+  backup_restore(u, u_d, v, v_d, switches, OP_SWING, r);
+  adjacency[v[0]][v_d[0]]           = u[1];
+  adjacency[u[0]][u_d[0]]           = adjacency[u[0]][s_degree[u[0]]-1];
+  adjacency[u[0]][s_degree[u[0]]-1] = NOT_DEFINED;
+  s_degree[u[0]]--;
+  adjacency[u[1]][s_degree[u[1]]]   = v[0];
+  s_degree[u[1]]++;
+  h_degree[u[0]]++; h_degree[u[1]]--;
+  
+  return true;
 }
 
 void ORP_Swing_adjacency_s(const int switches, const int radix, const int symmetries, int h_degree[switches],
@@ -1301,6 +1352,53 @@ void ORP_Swap_adjacency(const int switches, const int radix, const int s_degree[
     }
     break;
   }
+}
+
+bool ORP_Swap_adjacency_with_one_edge(const int hosts, const int switches, const int radix,
+                                      const int selected_edge[2], const int s_degree[switches], 
+                                      ORP_Restore *r, int adjacency[switches][radix])
+{
+  if(selected_edge[0] < hosts || selected_edge[1] < hosts)
+    ERROR("Edge includes host\n");
+
+  int u[2], v[2], u_d[2], v_d[2];
+  u[0]   = selected_edge[0] - hosts;
+  v[0]   = selected_edge[1] - hosts;
+  u_d[0] = search_index(u[0], v[0], -1,     s_degree, radix, adjacency);
+  v_d[0] = search_index(v[0], u[0], u_d[0], s_degree, radix, adjacency);
+  
+  int total_edges = 0;
+  for(int i=0;i<switches;i++)
+    total_edges += s_degree[i];
+  
+  set_random_edge(total_edges, switches, s_degree, radix, adjacency, &u[1], &v[1], &u_d[1], &v_d[1]);
+  if(u[0] == u[1] || v[0] == v[1] || (v[0] == u[1] && v[1] == u[0])) return false;
+
+  // backup for restore
+  backup_restore(u, u_d, v, v_d, switches, OP_SWAP, r);
+
+  if(get_random(2)){ // u[0]--v[1], u[1]--v[0]
+    if(!check_multiple_edges(u[0], u_d[0], v[1], switches, radix, s_degree, adjacency) ||
+       !check_multiple_edges(u[1], u_d[1], v[0], switches, radix, s_degree, adjacency))
+      return false;
+
+    adjacency[u[0]][u_d[0]] = v[1];
+    adjacency[u[1]][u_d[1]] = v[0];
+    adjacency[v[0]][v_d[0]] = u[1];
+    adjacency[v[1]][v_d[1]] = u[0];
+  }
+  else{             // u[0]--u[1], v[0]--v[1]
+    if(!check_multiple_edges(u[0], u_d[0], u[1], switches, radix, s_degree, adjacency) ||
+       !check_multiple_edges(v[0], v_d[0], v[1], switches, radix, s_degree, adjacency))
+      return false;
+    
+    adjacency[u[0]][u_d[0]] = u[1];
+    adjacency[u[1]][u_d[1]] = u[0];
+    adjacency[v[0]][v_d[0]] = v[1];
+    adjacency[v[1]][v_d[1]] = v[0];
+  }
+  
+  return true;
 }
 
 static bool swap_adjacency_1opt_s(const int u, const int u_d, const int switches, const int radix,

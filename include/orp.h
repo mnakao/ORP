@@ -38,3 +38,6 @@ void ORP_Conv_edge2adjacency_s(int hosts, int switches, int radix, int lines, vo
 void ORP_Conv_adjacency2edge_s(int hosts, int switches, int radix, int *h_degree, int *s_degree, void *adjacency, int symmetries, void *edge);
 void ORP_Swap_adjacency_s(int switches, int radix, int *s_degree, int symmetries, ORP_Restore *restore, void *adjacency);
 void ORP_Swing_adjacency_s(int switches, int radix, int symmetries, int *h_degree, int *s_degree, ORP_Restore *restore, void *adjacency);
+
+bool ORP_Swap_adjacency_with_one_edge(int hosts, int switches, int radix, int *selected_edge, int *s_degree, ORP_Restore *r, void *adjacency);
+bool ORP_Swing_adjacency_with_one_edge(int hosts, int switches, int radix, int *selected_edge, int *h_degree, int *s_degree, ORP_Restore *r, void *adjacency);
