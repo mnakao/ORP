@@ -15,8 +15,10 @@ endif
 LIBS=../liborp.a -lm
 THREADS_LIBS=../liborp_threads.a -lm
 TMP := $(shell mktemp)
-serial: detect_temp.x detect_switches.x histgram_s.x histgram_h.x opt_complete_graph.x add_vertex.x hmetis.x metis.x simgrid_dijkstra.x simgrid_dijkstra_dfs.x simgrid_dijkstra_random.x simgrid_wf.x simgrid_wf_dfs.x simgrid_wf_random.x
+serial: detect_temp.x detect_switches.x histgram_s.x histgram_h.x opt_complete_graph.x add_vertex.x hmetis.x metis.x simgrid_dijkstra.x simgrid_dijkstra_dfs.x simgrid_dijkstra_random.x simgrid_wf.x simgrid_wf_dfs.x simgrid_wf_random.x local_search.x
 all: serial
+local_search.x: local_search.c
+	$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 simgrid_dijkstra.x: simgrid_dijkstra.c
 	$(CC) $(CFLAGS) -o $@ $<
 simgrid_dijkstra_dfs.x: simgrid_dijkstra_dfs.c
