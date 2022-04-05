@@ -240,8 +240,8 @@ static void aspl_bfs(const int* restrict h_degree, const int* restrict s_degree,
 {
   *diameter = 0;
   *sum      = 0;
+  bool flag = true;
   for(int s=0;s<_switches;s++){
-    bool flag = true;
     if(h_degree[s] == 0) continue;
     
     int num_frontier = 1, level = 1;
@@ -301,8 +301,8 @@ static void aspl_bfs_s(const int* restrict h_degree, const int* restrict s_degre
 {
   *diameter = 0;
   *sum      = 0;
+  bool flag = true;
   for(int s=0;s<_based_switches;s++){
-    bool flag =	true;
     if(h_degree[s] == 0) continue;
 
     int num_frontier = 1, level = 1;
