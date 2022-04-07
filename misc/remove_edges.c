@@ -38,9 +38,11 @@ int main(int argc, char **argv)
   ORP_Set_lbounds(hosts, radix, &low_diameter, &low_ASPL);
 
   // Remove self-loop
+  bool flag = false;
   for(int i=0;i<lines;i++){
     if(is_edge_in_switches(i, hosts, edge)){
       if(edge[i][0] == edge[i][1]){
+        flag = true;
         printf("Remove self-loop        %d -- %d\n", edge[i][0], edge[i][1]);
         edge[i][0] = edge[lines-1][0];
         edge[i][1] = edge[lines-1][1];
@@ -56,8 +58,8 @@ int main(int argc, char **argv)
       for(int j=i+1;j<lines;j++){
         if(is_edge_in_switches(j, hosts, edge)){
           if((edge[i][0] == edge[j][0] && edge[i][1] == edge[j][1]) || (edge[i][0] == edge[j][1] && edge[i][1] == edge[j][0])){
+            flag = true;
             printf("Remove multiple edges   %d -- %d\n", edge[j][0], edge[j][1]);
-            printf("%d %d\n", i, j);
             edge[j][0] = edge[lines-1][0];
             edge[j][1] = edge[lines-1][1];
             lines--;
@@ -67,9 +69,15 @@ int main(int argc, char **argv)
       }
     }
   }
+
+  int num = 0;
+  if(flag){
+    printf("Created %d.edges\n", num);
+    sprintf(fname, "%d.edges", num++);
+    ORP_Write_edge(hosts, switches, radix, lines, (void *)edge, fname);
+  }
   
   // Remove unnecessary edge
-  int num = 0;
   for(int i=0;i<lines;i++){
     if(is_edge_in_switches(i, hosts, edge)){
       int u = edge[i][0], v = edge[i][1]; // backup
