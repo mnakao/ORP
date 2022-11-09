@@ -22,25 +22,6 @@ When you write a paper using this library, please refer to the paper.
 
 * https://doi.org/10.1016/j.parco.2022.102983
 
-```
-@inproceedings{10.1145/3368474.3368478,
-  author = {Nakao, Masahiro and Murai, Hitoshi and Sato, Mitsuhisa},
-  title = {Parallelization of All-Pairs-Shortest-Path Algorithms in Unweighted Graph},
-  year = {2020},
-  isbn = {9781450372367},
-  publisher = {Association for Computing Machinery},
-  address = {New York, NY, USA},
-  url = {https://doi.org/10.1145/3368474.3368478},
-  doi = {10.1145/3368474.3368478},
-  booktitle = {Proceedings of the International Conference on High Performance Computing in Asia-Pacific Region},
-  pages = {63–72},
-  numpages = {10},
-  keywords = {network, hybrid parallelization, graph theory, GPU},
-  location = {Fukuoka, Japan},
-  series = {HPCAsia2020}
-}
-```
-
 ## Quick start
 ### Serial version
 ```
