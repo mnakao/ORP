@@ -17,11 +17,10 @@ Blue circle is a switch, red circle is a hosts. This script has two options.
 * -n : Output vertex number
 * -s : Image size
 
-## Algotherm for hASPL (host-to-host Average Shortest Path Length)
-It uses an algorithm that is an extension of the following paper (Open Access).
+## Reference
 When you write a paper using this library, please refer to the paper.
 
-* https://dl.acm.org/doi/10.1145/3368474.3368478
+* https://doi.org/10.1016/j.parco.2022.102983
 
 ```
 @inproceedings{10.1145/3368474.3368478,
